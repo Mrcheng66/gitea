@@ -66,6 +66,7 @@ fi
 
 tests/test-configure-cos.sh
 tests/test-backup.sh
+tests/test-deploy.sh
 tests/test-health-check.sh
 tests/test-nginx-routing.sh
 

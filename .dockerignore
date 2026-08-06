@@ -88,3 +88,6 @@ prime/
 
 # Manpage
 /man
+
+# Production deployment environment
+/ops/compose/.env
