@@ -1,0 +1,72 @@
+{{template "org/settings/layout_head" (dict "pageClass" "organization settings org-projects")}}
+<div class="org-setting-content">
+	<h2 class="ui header">
+		{{ctx.Locale.Tr "org_project.settings.title"}}
+		<div class="sub header">{{ctx.Locale.Tr "org_project.settings.description"}}</div>
+	</h2>
+	<form class="ui form" method="post" action="{{.OrgLink}}/settings/projects">
+		{{.CsrfTokenHtml}}
+		<input type="hidden" name="pointer_version" value="{{.OrgProjectConfigPointer.Version}}">
+		<div data-org-project-config-editor data-schema="{{.OrgProjectConfigSchema}}">
+			<div class="field">
+				<label for="org-project-schema">{{ctx.Locale.Tr "org_project.settings.schema"}}</label>
+				<textarea id="org-project-schema" name="schema" rows="24" spellcheck="false">{{.OrgProjectConfigSchema}}</textarea>
+			</div>
+		</div>
+		<div class="flex-text-block tw-mt-4">
+			<button class="ui primary button">{{ctx.Locale.Tr "org_project.settings.save_draft"}}</button>
+			<button class="ui button" formaction="{{.OrgLink}}/settings/projects/validate">{{ctx.Locale.Tr "org_project.settings.validate"}}</button>
+		</div>
+	</form>
+
+	<div class="ui divider"></div>
+	<h3 class="ui header">{{ctx.Locale.Tr "org_project.settings.editor_teams"}}</h3>
+	<p>{{ctx.Locale.Tr "org_project.settings.editor_teams_description"}}</p>
+	<form method="post" action="{{.OrgLink}}/settings/projects/editor-teams">
+		{{.CsrfTokenHtml}}
+		<div data-org-project-editor-teams data-teams="{{JsonUtils.EncodeToString .OrgProjectEditorTeams}}" data-empty-text="{{ctx.Locale.Tr "org_project.settings.editor_teams_empty"}}"></div>
+		<button class="ui primary button tw-mt-4">{{ctx.Locale.Tr "save"}}</button>
+	</form>
+
+	<div class="ui divider"></div>
+	<div class="flex-left-right tw-gap-3">
+		<div>
+			<h3 class="ui header tw-m-0">{{ctx.Locale.Tr "org_project.settings.publish"}}</h3>
+			<p class="text light-2 tw-mt-1">{{ctx.Locale.Tr "org_project.settings.publish_description"}}</p>
+		</div>
+		<form method="post" action="{{.OrgLink}}/settings/projects/publish">
+			{{.CsrfTokenHtml}}
+			<input type="hidden" name="pointer_version" value="{{.OrgProjectConfigPointer.Version}}">
+			<button class="ui green button" data-modal-confirm="{{ctx.Locale.Tr "org_project.settings.publish_confirm"}}">{{ctx.Locale.Tr "org_project.settings.publish"}}</button>
+		</form>
+	</div>
+
+	{{if .OrgProjectConfigHistory}}
+		<h3 class="ui header">{{ctx.Locale.Tr "org_project.settings.history"}}</h3>
+		<div class="ui divided list">
+			{{range .OrgProjectConfigHistory}}
+				<div class="item">
+					<div class="right floated content">
+						{{if eq .State "published"}}
+							<form method="post" action="{{$.OrgLink}}/settings/projects/rollback">
+								{{$.CsrfTokenHtml}}
+								<input type="hidden" name="pointer_version" value="{{$.OrgProjectConfigPointer.Version}}">
+								<input type="hidden" name="version" value="{{.ID}}">
+								<button class="ui tiny basic button" data-modal-confirm="{{ctx.Locale.Tr "org_project.settings.rollback_confirm" .Version}}">{{ctx.Locale.Tr "org_project.settings.rollback"}}</button>
+							</form>
+						{{end}}
+					</div>
+					<div class="content">
+						<div class="header">v{{.Version}} · {{.State}}</div>
+						<div class="description">{{DateUtils.TimeSince .CreatedUnix}}</div>
+						<details class="tw-mt-2">
+							<summary class="tw-cursor-pointer">{{ctx.Locale.Tr "org_project.settings.compare"}}</summary>
+							<pre class="tw-mt-2 tw-overflow-x-auto">{{.Payload | JsonUtils.PrettyIndent}}</pre>
+						</details>
+					</div>
+				</div>
+			{{end}}
+		</div>
+	{{end}}
+</div>
+{{template "org/settings/layout_footer" .}}

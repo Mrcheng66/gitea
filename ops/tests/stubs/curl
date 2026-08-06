@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+request_url=${*: -1}
+if [[ -n ${CURL_FAIL_MATCH:-} && $request_url == *"$CURL_FAIL_MATCH"* ]]; then
+  exit 1
+fi
+
+exit "${CURL_STATUS:-0}"

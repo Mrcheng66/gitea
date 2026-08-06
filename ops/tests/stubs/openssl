@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+case "${1:-}" in
+  s_client)
+    printf 'test certificate\n'
+    exit "${OPENSSL_SCLIENT_STATUS:-0}"
+    ;;
+  x509)
+    cat >/dev/null
+    exit "${OPENSSL_X509_STATUS:-0}"
+    ;;
+  *)
+    printf 'Unsupported openssl stub command: %s\n' "${1:-}" >&2
+    exit 2
+    ;;
+esac

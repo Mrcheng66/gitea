@@ -1,0 +1,10 @@
+-
+  id: 1
+  owner_id: 3
+  version: 1
+  state: published
+  payload: '{}'
+  created_by: 2
+  created_unix: 1785890000
+  published_by: 2
+  published_unix: 1785890000

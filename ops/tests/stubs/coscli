@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+: "${COS_REMOTE_ROOT:?COS_REMOTE_ROOT is required}"
+mkdir -p "$COS_REMOTE_ROOT"
+if [[ -n ${COSCLI_LOG:-} ]]; then
+  printf '%s\n' "$*" >>"$COSCLI_LOG"
+fi
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --config-path)
+      shift 2
+      ;;
+    --disable-log)
+      shift
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
+
+command_name=${1:?missing command}
+shift
+
+remote_path() {
+  local uri=$1
+  printf '%s/%s' "$COS_REMOTE_ROOT" "${uri#cos://}"
+}
+
+case "$command_name" in
+  cp)
+    source_path=${1:?missing source}
+    destination_path=${2:?missing destination}
+
+    if [[ ${COSCLI_FAIL_UPLOAD:-0} == 1 && $source_path != cos://* && $destination_path == cos://*/tmp/* ]]; then
+      exit 2
+    fi
+
+    if [[ $source_path == cos://* ]]; then
+      source_path=$(remote_path "$source_path")
+    fi
+    if [[ $destination_path == cos://* ]]; then
+      destination_path=$(remote_path "$destination_path")
+    fi
+
+    mkdir -p "$(dirname "$destination_path")"
+    cp "$source_path" "$destination_path"
+    ;;
+  rm)
+    remote_uri=
+    for argument in "$@"; do
+      if [[ $argument == cos://* ]]; then
+        remote_uri=$argument
+      fi
+    done
+    [[ -n $remote_uri ]]
+    rm -f -- "$(remote_path "$remote_uri")"
+    ;;
+  bucket-versioning | bucket-encryption)
+    ;;
+  *)
+    printf 'Unsupported coscli stub command: %s\n' "$command_name" >&2
+    exit 2
+    ;;
+esac

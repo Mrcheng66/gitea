@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+: "${DOCKER_LOG:?DOCKER_LOG is required}"
+printf '%s\n' "$*" >>"$DOCKER_LOG"
+
+if [[ -n ${DOCKER_FAIL_MATCH:-} && "$*" == *"$DOCKER_FAIL_MATCH"* ]]; then
+  exit 1
+fi
+
+if [[ "$*" == *'printf %s "$GITEA__database__DB_TYPE"'* ]]; then
+  printf '%s' "${DOCKER_DATABASE_TYPE:-sqlite3}"
+elif [[ "$*" == *'printf %s "$GITEA__org_project__ENABLED"'* ]]; then
+  printf '%s' "${DOCKER_ORG_PROJECT_ENABLED:-true}"
+elif [[ "$*" == *'sqlite3 -batch -noheader /data/gitea/gitea.db'* ]]; then
+  printf '%s\n' "${DOCKER_ORG_PROJECT_READINESS:-$'1\n0'}"
+fi

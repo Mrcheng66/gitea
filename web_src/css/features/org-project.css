@@ -1,0 +1,191 @@
+.org-project-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  gap: 1rem;
+}
+
+.org-project-metric-card.ui.segment {
+  margin: 0;
+}
+
+.org-project-metric-values {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
+}
+
+.org-project-metric-value {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.org-project-metric-value strong {
+  font-size: 1.5rem;
+}
+
+.org-project-table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.org-project-table {
+  min-width: 42rem;
+}
+
+.org-project-description {
+  max-width: 32rem;
+  white-space: normal;
+}
+
+.org-project-form-fields,
+.org-project-editor-list,
+.org-project-config-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.org-project-editor-section {
+  padding-block: 0.5rem;
+}
+
+.org-project-editor-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+  gap: 0.75rem;
+}
+
+.org-project-inline-check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 38px;
+}
+
+.org-project-option-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) auto;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.org-project-remove-button {
+  align-self: end;
+}
+
+.org-project-editor-item.disabled {
+  opacity: 0.7;
+}
+
+.org-project-schema-fallback {
+  min-height: 10rem;
+  font-family: var(--fonts-monospace);
+}
+
+.org-project-team-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  gap: 0.75rem;
+}
+
+.org-project-team-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  min-height: 44px;
+  padding: 0.75rem;
+  border: 1px solid var(--color-secondary);
+  border-radius: var(--border-radius);
+  cursor: pointer;
+}
+
+.org-project-team-option span {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.org-project-team-option.disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.org-project-history-diff {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.org-project-history-diff pre {
+  max-height: 20rem;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 767.98px) {
+  .org-project-editor-grid,
+  .org-project-history-diff {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .org-projects *,
+  .org-projects *::before,
+  .org-projects *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+.org-project-activity-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.org-project-activity-summary .ui.segment {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin: 0;
+}
+
+.org-project-activity-summary strong {
+  grid-column: 1 / -1;
+  font-size: 1.75rem;
+}
+
+.org-project-activity-table {
+  min-width: 44rem;
+}
+
+.org-project-activity-commit {
+  display: flex !important;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.org-project-activity-commit .description {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.75rem;
+  margin-top: 0.35rem;
+}
+
+@media (max-width: 767.98px) {
+  .org-project-activity-summary {
+    grid-template-columns: 1fr;
+  }
+}
+
+.org-project-activity-latest {
+  grid-column: 1 / -1;
+}

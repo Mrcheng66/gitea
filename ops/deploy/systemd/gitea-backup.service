@@ -1,0 +1,19 @@
+[Unit]
+Description=Back up the internal Gitea service to Tencent Cloud COS
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+ConditionPathExists=/opt/gitea-stack/ops/compose/.env
+ConditionPathExists=/etc/gitea-stack/backup.env
+
+[Service]
+Type=oneshot
+EnvironmentFile=/opt/gitea-stack/ops/compose/.env
+EnvironmentFile=/etc/gitea-stack/backup.env
+ExecStart=/opt/gitea-stack/ops/scripts/backup.sh
+TimeoutStartSec=30min
+SuccessExitStatus=75
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=full

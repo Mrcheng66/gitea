@@ -1,0 +1,28 @@
+{{template "base/head" .}}
+<div role="main" aria-label="{{.Title}}" class="page-content">
+	<div class="ui container">
+		{{template "base/alert" .}}
+		<div class="ui header">
+			{{svg "octicon-project" 32}}
+			<div class="content">{{ctx.Locale.Tr "org_project.title"}}<div class="sub header">{{ctx.Locale.Tr "org_project.landing.description"}}</div></div>
+		</div>
+		{{if .Organizations}}
+			<div class="ui divided items">
+				{{range .Organizations}}
+					<a class="item" href="{{AppSubUrl}}/org/{{.Name}}/projects">
+						<div class="ui tiny image">{{ctx.AvatarUtils.Avatar . 48}}</div>
+						<div class="content">
+							<div class="header">{{.DisplayName}}</div>
+							<div class="description">{{if .Description}}{{.Description}}{{else}}{{ctx.Locale.Tr "org_project.landing.open"}}{{end}}</div>
+						</div>
+					</a>
+				{{end}}
+			</div>
+		{{else}}
+			<div class="ui placeholder segment">
+				<div class="ui icon header">{{svg "octicon-organization" 32}}{{ctx.Locale.Tr "org_project.landing.empty"}}</div>
+			</div>
+		{{end}}
+	</div>
+</div>
+{{template "base/footer" .}}

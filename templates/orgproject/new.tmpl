@@ -1,0 +1,18 @@
+{{template "base/head" .}}
+<div role="main" aria-label="{{.Title}}" class="page-content organization org-projects">
+	{{template "orgproject/shared/header" .}}
+	<div class="ui container">
+		{{template "base/alert" .}}
+		<h2 class="ui header">{{ctx.Locale.Tr "org_project.new"}}<div class="sub header">{{ctx.Locale.Tr "org_project.new_description"}}</div></h2>
+		{{if .OrgProjectError}}<div class="ui negative message">{{.OrgProjectError}}</div>{{end}}
+		<form class="ui form" method="post" action="{{.OrgProjectBaseLink}}/new">
+			{{.CsrfTokenHtml}}
+			<div class="required field"><label for="name">{{ctx.Locale.Tr "org_project.name"}}</label><input id="name" name="name" maxlength="255" value="{{.Form.Name}}" required></div>
+			<div class="required field"><label for="slug">{{ctx.Locale.Tr "org_project.slug"}}</label><input id="slug" name="slug" maxlength="255" value="{{.Form.Slug}}" required><p class="help">{{ctx.Locale.Tr "org_project.slug_help"}}</p></div>
+			<div class="field"><label for="description">{{ctx.Locale.Tr "org_project.description"}}</label><textarea id="description" name="description" rows="4">{{.Form.Description}}</textarea></div>
+			<div data-org-project-form data-schema="{{JsonUtils.EncodeToString .OrgProjectSchema}}" data-values="{{.OrgProjectValues}}" data-members="{{JsonUtils.EncodeToString .OrgProjectMembers}}"></div>
+			<div class="field"><button class="ui primary button">{{ctx.Locale.Tr "org_project.create"}}</button><a class="ui button" href="{{.OrgProjectBaseLink}}/list">{{ctx.Locale.Tr "cancel"}}</a></div>
+		</form>
+	</div>
+</div>
+{{template "base/footer" .}}
