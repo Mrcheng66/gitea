@@ -15,6 +15,7 @@ ARG GITEA_VERSION
 ARG TAGS=""
 ENV TAGS="bindata timetzdata $TAGS"
 ARG CGO_EXTRA_CFLAGS
+ARG GOPROXY=https://goproxy.cn,direct
 
 # Build deps
 RUN apk --no-cache add \
@@ -23,7 +24,8 @@ RUN apk --no-cache add \
 
 WORKDIR ${GOPATH}/src/gitea.dev
 COPY go.mod go.sum ./
-RUN go mod download
+RUN --mount=type=cache,target="/go/pkg/mod" \
+    go mod download
 # Use COPY instead of bind mount as read-only one breaks makefile state tracking and read-write one needs binary to be moved as it's discarded.
 # ".git" directory is mounted separately later only for version data extraction.
 COPY --exclude=.git/ . .
@@ -31,6 +33,7 @@ COPY --from=frontend-build /src/public/assets public/assets
 
 # Build gitea, .git mount is required for version data
 RUN --mount=type=cache,target="/root/.cache/go-build" \
+    --mount=type=cache,target="/go/pkg/mod" \
     --mount=type=bind,source=".git/",target=".git/" \
     make backend
 

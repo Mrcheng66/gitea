@@ -34,6 +34,7 @@ sudo chmod 0644 ops/compose/.env
 - `GITEA_INTERNAL_COMMIT`：待部署提交的完整 SHA，可用 `git rev-parse HEAD` 获取。
 - `GITEA_BUILD_DATE`：UTC RFC3339 构建时间，例如 `date -u +%Y-%m-%dT%H:%M:%SZ`。
 - `GITEA_DATA_DIR`：宿主机持久化目录。
+- `GOPROXY`：Go 模块代理，默认使用 `https://goproxy.cn,direct`；可直连官方服务的构建节点可改为 `https://proxy.golang.org,direct`。
 
 发布前确认源码与元数据一致：
 
