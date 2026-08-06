@@ -1,0 +1,11 @@
+-
+  id: 1
+  owner_id: 3
+  slug: platform
+  name: Platform
+  description: Internal platform
+  lifecycle: active
+  version: 1
+  created_by: 2
+  created_unix: 1785890000
+  updated_unix: 1785890000

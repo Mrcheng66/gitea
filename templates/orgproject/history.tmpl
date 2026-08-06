@@ -1,0 +1,13 @@
+{{template "base/head" .}}
+<div role="main" aria-label="{{.Title}}" class="page-content organization org-projects">
+	{{template "orgproject/shared/header" .}}
+	<div class="ui container">
+		{{template "base/alert" .}}
+		<div class="flex-left-right tw-mb-4">
+			<h2 class="ui header tw-m-0">{{ctx.Locale.Tr "org_project.history.title" .OrgProject.Name}}</h2>
+			<a class="ui button" href="{{.OrgProjectBaseLink}}/{{.OrgProject.Slug}}">{{svg "octicon-arrow-left"}} {{ctx.Locale.Tr "org_project.back"}}</a>
+		</div>
+		<div data-org-project-history data-changes="{{JsonUtils.EncodeToString .OrgProjectChanges}}" data-empty-text="{{ctx.Locale.Tr "org_project.history.empty"}}"></div>
+	</div>
+</div>
+{{template "base/footer" .}}

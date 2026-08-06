@@ -1,0 +1,28 @@
+{{template "base/head" .}}
+<div role="main" aria-label="{{.Title}}" class="page-content organization org-projects">
+	{{template "orgproject/shared/header" .}}
+	<div class="ui container">
+		{{template "base/alert" .}}
+		<div class="flex-left-right tw-gap-4 tw-mb-4">
+			<div>
+				<h2 class="ui header tw-m-0">{{ctx.Locale.Tr "org_project.activity.title" .OrgProject.Name}}</h2>
+				<div class="text light-2 tw-mt-1">{{ctx.Locale.Tr "org_project.activity.description"}}</div>
+			</div>
+			<a class="ui button" href="{{.OrgProjectBaseLink}}/{{.OrgProject.Slug}}">{{svg "octicon-arrow-left"}} {{ctx.Locale.Tr "org_project.back"}}</a>
+		</div>
+		<div
+			data-org-project-activity
+			data-summary="{{JsonUtils.EncodeToString .OrgProjectActivity}}"
+			data-locale-open-pulls="{{ctx.Locale.Tr "org_project.activity.open_pulls"}}"
+			data-locale-merged-pulls="{{ctx.Locale.Tr "org_project.activity.merged_pulls"}}"
+			data-locale-releases="{{ctx.Locale.Tr "org_project.activity.releases"}}"
+			data-locale-repositories="{{ctx.Locale.Tr "org_project.activity.repositories"}}"
+			data-locale-repository="{{ctx.Locale.Tr "repo.repository"}}"
+			data-locale-recent-commits="{{ctx.Locale.Tr "org_project.activity.recent_commits"}}"
+			data-locale-latest-release="{{ctx.Locale.Tr "org_project.activity.latest_release"}}"
+			data-locale-empty="{{ctx.Locale.Tr "org_project.activity.empty"}}"
+			data-locale-since="{{ctx.Locale.Tr "org_project.activity.since"}}"
+		></div>
+	</div>
+</div>
+{{template "base/footer" .}}

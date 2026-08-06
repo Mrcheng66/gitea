@@ -1,0 +1,22 @@
+{{template "base/head" .}}
+<div role="main" aria-label="{{.Title}}" class="page-content organization org-projects">
+	{{template "orgproject/shared/header" .}}
+	<div class="ui container">
+		{{template "base/alert" .}}
+		<div class="flex-left-right tw-mb-3">
+			<div>
+				<h2 class="ui header tw-m-0">{{ctx.Locale.Tr "org_project.list"}}</h2>
+				<div class="text light-2 tw-mt-1">{{ctx.Locale.Tr "org_project.total" .OrgProjectTotal}}</div>
+			</div>
+			<form method="get" class="ui form">
+				<label><input type="checkbox" name="include_archived" value="true" {{if .IncludeArchived}}checked{{end}} onchange="this.form.submit()"> {{ctx.Locale.Tr "org_project.include_archived"}}</label>
+			</form>
+		</div>
+		{{if .OrgProjectConfigReady}}
+			{{if .OrgProjectRows}}<div data-org-project-list data-rows="{{JsonUtils.EncodeToString .OrgProjectRows}}" data-base-link="{{.OrgProjectBaseLink}}" data-archived-label="{{ctx.Locale.Tr "org_project.archived"}}" data-no-description="{{ctx.Locale.Tr "org_project.no_description"}}">{{template "orgproject/shared/project_table" .}}</div>{{else}}{{template "orgproject/shared/project_table" .}}{{end}}
+		{{else}}
+			<div class="ui warning message">{{ctx.Locale.Tr "org_project.config_missing_description"}}</div>
+		{{end}}
+	</div>
+</div>
+{{template "base/footer" .}}

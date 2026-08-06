@@ -1,0 +1,12 @@
+[Unit]
+Description=Run Gitea health checks every five minutes
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=5min
+Persistent=true
+AccuracySec=30s
+Unit=gitea-health.service
+
+[Install]
+WantedBy=timers.target

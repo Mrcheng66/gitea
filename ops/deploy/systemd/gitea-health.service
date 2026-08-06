@@ -1,0 +1,16 @@
+[Unit]
+Description=Check internal Gitea, organization projects, TLS, disk, and backup health
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+ConditionPathExists=/opt/gitea-stack/ops/compose/.env
+
+[Service]
+Type=oneshot
+EnvironmentFile=/opt/gitea-stack/ops/compose/.env
+ExecStart=/opt/gitea-stack/ops/scripts/health-check.sh
+TimeoutStartSec=1min
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict

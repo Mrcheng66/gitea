@@ -1,0 +1,24 @@
+{{template "org/header" .}}
+<div class="ui container">
+	<overflow-menu class="ui secondary pointing tabular borderless menu tw-mb-4">
+		<div class="overflow-menu-items">
+			<a class="{{if eq .OrgProjectActive "dashboard"}}active {{end}}item" href="{{.OrgProjectBaseLink}}">
+				{{svg "octicon-pulse"}} {{ctx.Locale.Tr "org_project.dashboard"}}
+			</a>
+			<a class="{{if eq .OrgProjectActive "list"}}active {{end}}item" href="{{.OrgProjectBaseLink}}/list">
+				{{svg "octicon-table"}} {{ctx.Locale.Tr "org_project.list"}}
+			</a>
+			{{if .CanEditOrgProjects}}
+				<a class="{{if eq .OrgProjectActive "new"}}active {{end}}item" href="{{.OrgProjectBaseLink}}/new">
+					{{svg "octicon-plus"}} {{ctx.Locale.Tr "org_project.new"}}
+				</a>
+			{{end}}
+			{{if .CanConfigureOrgProjects}}
+				<span class="item-flex-space"></span>
+				<a class="item" href="{{.OrgLink}}/settings/projects">
+					{{svg "octicon-gear"}} {{ctx.Locale.Tr "org_project.settings.title"}}
+				</a>
+			{{end}}
+		</div>
+	</overflow-menu>
+</div>

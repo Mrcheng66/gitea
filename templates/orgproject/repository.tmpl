@@ -1,0 +1,10 @@
+{{template "base/head" .}}
+<div role="main" aria-label="{{.Title}}" class="page-content repository">
+	{{template "repo/header" .}}
+	<div class="ui container">
+		{{template "base/alert" .}}
+		<h2 class="ui header">{{ctx.Locale.Tr "org_project.repository.title"}}<div class="sub header">{{ctx.Locale.Tr "org_project.repository.description"}}</div></h2>
+		{{if .OrgProjects}}<div class="ui divided items">{{range .OrgProjects}}<a class="item" href="{{$.OrgProjectOrgLink}}/{{.Slug}}"><div class="content"><div class="header">{{.Name}}</div><div class="description">{{.Description}}</div></div></a>{{end}}</div>{{else}}<div class="ui placeholder segment"><div class="ui icon header">{{svg "octicon-project" 32}}{{ctx.Locale.Tr "org_project.repository.empty"}}</div></div>{{end}}
+	</div>
+</div>
+{{template "base/footer" .}}

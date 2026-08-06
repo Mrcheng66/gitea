@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+printf 'Filesystem 1024-blocks Used Available Capacity Mounted on\n'
+printf '/dev/test 100 10 90 %s%% /srv/gitea/data\n' "${DF_PERCENT:-10}"
