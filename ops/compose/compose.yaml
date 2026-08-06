@@ -11,6 +11,7 @@ services:
         GITEA_UPSTREAM_COMMIT: ${GITEA_UPSTREAM_COMMIT}
         GITEA_INTERNAL_COMMIT: ${GITEA_INTERNAL_COMMIT}
         GITEA_BUILD_DATE: ${GITEA_BUILD_DATE}
+        GOPROXY: ${GOPROXY:-https://proxy.golang.org,direct}
     restart: unless-stopped
     environment:
       USER_UID: "1000"
