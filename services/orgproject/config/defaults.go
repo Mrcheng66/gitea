@@ -36,6 +36,10 @@ func DefaultSchema() Schema {
 				{Key: "blocked", Label: "已阻塞", Order: 30},
 			}},
 			{Key: "summary", Label: "项目摘要", Type: FieldTypeLongText, Order: 80, Default: rawDefault("")},
+			{Key: "current_problem", Label: "当前问题", Type: FieldTypeLongText, Order: 90, Default: rawDefault("")},
+			{Key: "next_action", Label: "下一步行动", Type: FieldTypeLongText, Order: 100, Default: rawDefault("")},
+			{Key: "next_action_owner", Label: "行动负责人", Type: FieldTypeMember, Order: 110},
+			{Key: "next_action_due", Label: "行动期限", Type: FieldTypeDate, Order: 120},
 		},
 		ListView: ListView{
 			Columns: []string{"stage", "owner", "followers", "progress", "risk", "target_date"},

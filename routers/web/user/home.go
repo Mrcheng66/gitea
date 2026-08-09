@@ -40,6 +40,7 @@ import (
 	"gitea.dev/services/context"
 	feed_service "gitea.dev/services/feed"
 	issue_service "gitea.dev/services/issue"
+	workbench_service "gitea.dev/services/orgproject/workbench"
 	pull_service "gitea.dev/services/pull"
 
 	"github.com/ProtonMail/go-crypto/openpgp"
@@ -98,6 +99,42 @@ func Dashboard(ctx *context.Context) {
 	ctx.Data["UserOrgsCount"] = cnt
 	ctx.Data["MirrorsEnabled"] = setting.Mirror.Enabled
 	ctx.Data["Date"] = date
+	ctx.Data["ProjectWorkbenchEnabled"] = setting.OrgProject.Enabled && ctx.FormString("view") != "activity"
+
+	if ctx.Data["ProjectWorkbenchEnabled"].(bool) {
+		orgs := ctx.Data["Orgs"].([]*organization.Organization)
+		if ctx.Org.Organization != nil {
+			orgs = []*organization.Organization{ctx.Org.Organization}
+		}
+		workbench, err := workbench_service.Build(ctx, ctx.Doer, orgs, workbench_service.Options{OnlyMine: ctx.FormString("scope") == "mine"})
+		if err != nil {
+			ctx.ServerError("BuildProjectWorkbench", err)
+			return
+		}
+		ctx.Data["ProjectWorkbench"] = workbench
+		ctx.Data["ProjectWorkbenchOnlyMine"] = ctx.FormString("scope") == "mine"
+		ctx.Data["ProjectWorkbenchLabels"] = map[string]any{
+			"title": ctx.Tr("org_project.workbench.title"), "subtitle": ctx.Tr("org_project.workbench.subtitle"),
+			"team": ctx.Tr("org_project.workbench.team"), "mine": ctx.Tr("org_project.workbench.mine"),
+			"attention": ctx.Tr("org_project.workbench.attention"), "blocked": ctx.Tr("org_project.workbench.blocked"),
+			"clear":   ctx.Tr("org_project.workbench.clear"),
+			"overdue": ctx.Tr("org_project.workbench.overdue"), "dueSoon": ctx.Tr("org_project.workbench.due_soon"),
+			"stale": ctx.Tr("org_project.workbench.stale"), "unowned": ctx.Tr("org_project.workbench.unowned"),
+			"currentProblem": ctx.Tr("org_project.workbench.current_problem"), "nextAction": ctx.Tr("org_project.workbench.next_action"),
+			"owner": ctx.Tr("org_project.workbench.owner"), "participants": ctx.Tr("org_project.workbench.participants"),
+			"realProgress": ctx.Tr("org_project.workbench.real_progress"), "people": ctx.Tr("org_project.workbench.people"),
+			"quickLinks": ctx.Tr("org_project.workbench.quick_links"), "allActivity": ctx.Tr("org_project.workbench.all_activity"),
+			"empty": ctx.Tr("org_project.workbench.empty"), "configure": ctx.Tr("org_project.workbench.configure"),
+			"noEvidence": ctx.Tr("org_project.workbench.no_evidence"), "activityUnavailable": ctx.Tr("org_project.workbench.activity_unavailable"),
+			"expand": ctx.Tr("org_project.workbench.expand"), "collapse": ctx.Tr("org_project.workbench.collapse"),
+			"release": ctx.Tr("org_project.workbench.release"), "pullMerged": ctx.Tr("org_project.workbench.pull_merged"),
+			"issueClosed": ctx.Tr("org_project.workbench.issue_closed"), "commit": ctx.Tr("org_project.workbench.commit"),
+			"target": ctx.Tr("org_project.workbench.target"), "releases": ctx.Tr("org_project.workbench.releases"),
+			"merged": ctx.Tr("org_project.workbench.merged"), "open": ctx.Tr("org_project.workbench.open"),
+		}
+		ctx.HTML(http.StatusOK, tplDashboard)
+		return
+	}
 
 	var uid int64
 	if ctxUser != nil {

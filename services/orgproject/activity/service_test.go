@@ -20,11 +20,16 @@ import (
 
 type fakeReader struct {
 	commits    map[int64][]Commit
+	progress   map[int64][]ProgressEvent
 	pulls      map[int64]PullRequestCounts
 	releases   map[int64]ReleaseSummary
 	limits     []int
 	pullIDs    []int64
 	releaseIDs []int64
+}
+
+func (reader *fakeReader) ProgressEvents(_ context.Context, repository *repo_model.Repository, _ time.Time, _ visibleRepository) ([]ProgressEvent, error) {
+	return reader.progress[repository.ID], nil
 }
 
 func (reader *fakeReader) RecentCommits(_ context.Context, repository *repo_model.Repository, _ time.Time, limit int) ([]Commit, error) {
@@ -78,6 +83,7 @@ func TestSummarizeBoundsAndAggregatesVisibleRepositories(t *testing.T) {
 		},
 		pulls:    map[int64]PullRequestCounts{1: {Open: 2, Merged: 1}, 2: {Open: 3, Merged: 4}},
 		releases: map[int64]ReleaseSummary{1: {Count: 1, LatestAt: &latest}, 2: {Count: 2}},
+		progress: map[int64][]ProgressEvent{1: {{Kind: "release", Title: "v1.0", OccurredAt: now.Add(-15 * time.Minute)}}},
 	}
 
 	summary, err := summarize(t.Context(), reader, repositories, Options{
@@ -91,6 +97,8 @@ func TestSummarizeBoundsAndAggregatesVisibleRepositories(t *testing.T) {
 	assert.EqualValues(t, 5, summary.MergedPulls)
 	assert.EqualValues(t, 1, summary.ReleaseCount)
 	require.Len(t, summary.Commits, 3)
+	require.Len(t, summary.Progress, 4)
+	assert.Equal(t, "release", summary.Progress[0].Kind)
 	assert.Equal(t, []string{"4", "2", "3"}, []string{summary.Commits[0].SHA, summary.Commits[1].SHA, summary.Commits[2].SHA})
 	require.NotNil(t, summary.LatestReleaseAt)
 	assert.Equal(t, latest, *summary.LatestReleaseAt)
@@ -126,4 +134,14 @@ func TestNativeReaderPullRequestsAndReleases(t *testing.T) {
 	assert.EqualValues(t, 2, releases.Count)
 	require.NotNil(t, releases.LatestAt)
 	assert.True(t, since.Equal(*releases.LatestAt))
+}
+
+func TestNativeReaderProgressEvents(t *testing.T) {
+	require.NoError(t, unittest.PrepareTestDatabase())
+	repository := unittest.AssertExistsAndLoadBean(t, &repo_model.Repository{ID: 1})
+	events, err := (nativeReader{}).ProgressEvents(t.Context(), repository, time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC), visibleRepository{
+		Repository: repository, CanReadIssues: true, CanReadPulls: true, CanReadReleases: true,
+	})
+	require.NoError(t, err)
+	assert.NotEmpty(t, events)
 }

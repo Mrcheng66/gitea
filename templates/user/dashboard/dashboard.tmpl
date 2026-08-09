@@ -1,17 +1,30 @@
 {{template "base/head" .}}
 <div role="main" aria-label="{{.Title}}" class="page-content dashboard feeds">
 	{{template "user/dashboard/navbar" .}}
-	<div class="ui container flex-container">
-		<div class="flex-container-main">
+	{{if .ProjectWorkbenchEnabled}}
+		<div class="ui container project-workbench-page">
 			{{template "base/alert" .}}
-			{{template "user/heatmap" .}}
-			{{if .Page.Paginater.TotalPages}}
-				{{template "user/dashboard/feeds" .}}
-			{{else}}
-				{{template "user/dashboard/guide" .}}
-			{{end}}
+			<div
+				data-org-project-workbench
+				data-workbench="{{JsonUtils.EncodeToString .ProjectWorkbench}}"
+				data-only-mine="{{.ProjectWorkbenchOnlyMine}}"
+				data-base-link="{{ctx.Req.URL.Path}}"
+				data-labels="{{JsonUtils.EncodeToString .ProjectWorkbenchLabels}}"
+			></div>
 		</div>
-		{{template "user/dashboard/repolist" .}}
-	</div>
+	{{else}}
+		<div class="ui container flex-container">
+			<div class="flex-container-main">
+				{{template "base/alert" .}}
+				{{template "user/heatmap" .}}
+				{{if .Page.Paginater.TotalPages}}
+					{{template "user/dashboard/feeds" .}}
+				{{else}}
+					{{template "user/dashboard/guide" .}}
+				{{end}}
+			</div>
+			{{template "user/dashboard/repolist" .}}
+		</div>
+	{{end}}
 </div>
 {{template "base/footer" .}}

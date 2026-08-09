@@ -6,7 +6,6 @@ package activity
 import (
 	"context"
 	"errors"
-	"fmt"
 	"slices"
 	"time"
 
@@ -17,6 +16,7 @@ import (
 	"gitea.dev/models/unit"
 	user_model "gitea.dev/models/user"
 	"gitea.dev/modules/git"
+	"gitea.dev/modules/log"
 	"gitea.dev/modules/optional"
 	project_service "gitea.dev/services/orgproject/project"
 
@@ -30,6 +30,8 @@ const (
 	maximumPerRepositoryCommitLimit = 20
 	defaultTotalCommitLimit         = 20
 	maximumTotalCommitLimit         = 100
+	defaultTotalProgressLimit       = 10
+	maximumTotalProgressLimit       = 50
 )
 
 // Options bounds one organization project activity query.
@@ -37,6 +39,7 @@ type Options struct {
 	Since                    time.Time
 	PerRepositoryCommitLimit int
 	TotalCommitLimit         int
+	TotalProgressLimit       int
 }
 
 // Commit represents one recent commit from a visible linked repository.
@@ -84,18 +87,22 @@ type Summary struct {
 	MergedPulls     int64               `json:"merged_pulls"`
 	ReleaseCount    int64               `json:"release_count"`
 	LatestReleaseAt *time.Time          `json:"latest_release_at,omitempty"`
+	Progress        []ProgressEvent     `json:"progress"`
+	Partial         bool                `json:"partial"`
 }
 
 type reader interface {
 	RecentCommits(context.Context, *repo_model.Repository, time.Time, int) ([]Commit, error)
 	PullRequestCounts(context.Context, *repo_model.Repository, time.Time) (PullRequestCounts, error)
 	ReleaseSummary(context.Context, *repo_model.Repository, time.Time) (ReleaseSummary, error)
+	ProgressEvents(context.Context, *repo_model.Repository, time.Time, visibleRepository) ([]ProgressEvent, error)
 }
 
 type nativeReader struct{}
 
 type visibleRepository struct {
 	Repository      *repo_model.Repository
+	CanReadIssues   bool
 	CanReadPulls    bool
 	CanReadReleases bool
 }
@@ -125,7 +132,8 @@ func loadVisibleRepositories(ctx context.Context, ownerID, projectID int64, acto
 			return nil, err
 		}
 		repositories = append(repositories, visibleRepository{
-			Repository: repository, CanReadPulls: permission.CanRead(unit.TypePullRequests), CanReadReleases: permission.CanRead(unit.TypeReleases),
+			Repository: repository, CanReadIssues: permission.CanRead(unit.TypeIssues),
+			CanReadPulls: permission.CanRead(unit.TypePullRequests), CanReadReleases: permission.CanRead(unit.TypeReleases),
 		})
 	}
 	return repositories, nil
@@ -137,7 +145,8 @@ func summarize(ctx context.Context, source reader, repositories []visibleReposit
 		return nil, err
 	}
 	summary := &Summary{
-		Since: normalized.Since, Repositories: make([]RepositorySummary, 0, len(repositories)), Commits: make([]Commit, 0),
+		Since: normalized.Since, Repositories: make([]RepositorySummary, 0, len(repositories)),
+		Commits: make([]Commit, 0), Progress: make([]ProgressEvent, 0),
 	}
 	for _, visible := range repositories {
 		repository := visible.Repository
@@ -146,20 +155,32 @@ func summarize(ctx context.Context, source reader, repositories []visibleReposit
 		}
 		commits, err := source.RecentCommits(ctx, repository, normalized.Since, normalized.PerRepositoryCommitLimit)
 		if err != nil {
-			return nil, fmt.Errorf("recent commits for %s: %w", repository.FullName(), err)
+			log.Warn("Unable to load recent commits for %s: %v", repository.FullName(), err)
+			summary.Partial = true
+			commits = nil
+		}
+		progress, err := source.ProgressEvents(ctx, repository, normalized.Since, visible)
+		if err != nil {
+			log.Warn("Unable to load progress events for %s: %v", repository.FullName(), err)
+			summary.Partial = true
+			progress = nil
 		}
 		pulls := PullRequestCounts{}
 		if visible.CanReadPulls {
 			pulls, err = source.PullRequestCounts(ctx, repository, normalized.Since)
 			if err != nil {
-				return nil, fmt.Errorf("pull requests for %s: %w", repository.FullName(), err)
+				log.Warn("Unable to load pull request counts for %s: %v", repository.FullName(), err)
+				summary.Partial = true
+				pulls = PullRequestCounts{}
 			}
 		}
 		releases := ReleaseSummary{}
 		if visible.CanReadReleases {
 			releases, err = source.ReleaseSummary(ctx, repository, normalized.Since)
 			if err != nil {
-				return nil, fmt.Errorf("releases for %s: %w", repository.FullName(), err)
+				log.Warn("Unable to load release summary for %s: %v", repository.FullName(), err)
+				summary.Partial = true
+				releases = ReleaseSummary{}
 			}
 		}
 		summary.Repositories = append(summary.Repositories, RepositorySummary{
@@ -167,6 +188,7 @@ func summarize(ctx context.Context, source reader, repositories []visibleReposit
 			MergedPulls: pulls.Merged, ReleaseCount: releases.Count, LatestReleaseAt: releases.LatestAt,
 		})
 		summary.Commits = append(summary.Commits, commits...)
+		summary.Progress = append(summary.Progress, progress...)
 		summary.OpenPulls += pulls.Open
 		summary.MergedPulls += pulls.Merged
 		summary.ReleaseCount += releases.Count
@@ -180,6 +202,13 @@ func summarize(ctx context.Context, source reader, repositories []visibleReposit
 	})
 	if len(summary.Commits) > normalized.TotalCommitLimit {
 		summary.Commits = summary.Commits[:normalized.TotalCommitLimit]
+	}
+	appendCommitProgress(summary)
+	slices.SortStableFunc(summary.Progress, func(left, right ProgressEvent) int {
+		return right.OccurredAt.Compare(left.OccurredAt)
+	})
+	if len(summary.Progress) > normalized.TotalProgressLimit {
+		summary.Progress = summary.Progress[:normalized.TotalProgressLimit]
 	}
 	return summary, nil
 }
@@ -207,7 +236,22 @@ func normalizeOptions(opts Options, now time.Time) (Options, error) {
 	} else if opts.TotalCommitLimit > maximumTotalCommitLimit {
 		opts.TotalCommitLimit = maximumTotalCommitLimit
 	}
+	if opts.TotalProgressLimit <= 0 {
+		opts.TotalProgressLimit = defaultTotalProgressLimit
+	} else if opts.TotalProgressLimit > maximumTotalProgressLimit {
+		opts.TotalProgressLimit = maximumTotalProgressLimit
+	}
 	return opts, nil
+}
+
+func appendCommitProgress(summary *Summary) {
+	for _, commit := range summary.Commits {
+		summary.Progress = append(summary.Progress, ProgressEvent{
+			Kind: "commit", Title: commit.Message, Link: commit.Link, RepositoryID: commit.RepositoryID,
+			RepositoryFullName: commit.RepositoryFullName, RepositoryLink: commit.RepositoryLink,
+			AuthorName: commit.AuthorName, OccurredAt: commit.CommittedAt,
+		})
+	}
 }
 
 func (nativeReader) RecentCommits(ctx context.Context, repository *repo_model.Repository, since time.Time, limit int) ([]Commit, error) {

@@ -11,7 +11,9 @@ describe('ProjectActivity', () => {
   test('renders only the visible repository data supplied by the service', async () => {
     const summary: OrgProjectActivitySummary = {
       since: '2026-07-06T12:00:00Z', open_pulls: 2, merged_pulls: 1, release_count: 1,
+      partial: false,
       repositories: [{id: 32, full_name: 'org/visible', link: '/org/visible', open_pulls: 2, merged_pulls: 1, release_count: 1}],
+      progress: [],
       commits: [{
         repository_id: 32, repository_full_name: 'org/visible', repository_link: '/org/visible', sha: 'abcdef123456',
         short_sha: 'abcdef1234', link: '/org/visible/commit/abcdef123456', message: 'Visible commit', author_name: 'Alice',

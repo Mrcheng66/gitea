@@ -114,6 +114,17 @@ export type OrgProjectActivityCommit = {
   committed_at: string,
 };
 
+export type OrgProjectProgressEvent = {
+  kind: 'release' | 'pull_merged' | 'issue_closed' | 'commit',
+  title: string,
+  link: string,
+  repository_id: number,
+  repository_full_name: string,
+  repository_link: string,
+  author_name: string,
+  occurred_at: string,
+};
+
 export type OrgProjectActivityRepository = {
   id: number,
   full_name: string,
@@ -124,6 +135,52 @@ export type OrgProjectActivityRepository = {
   latest_release_at?: string,
 };
 
+export type ProjectWorkbenchPerson = {
+  id: number,
+  name: string,
+  full_name: string,
+  link: string,
+  owned: number,
+  participating: number,
+  projects: string[],
+};
+
+export type ProjectWorkbenchProject = {
+  id: number,
+  name: string,
+  description: string,
+  link: string,
+  organization: string,
+  organization_url: string,
+  stage_key: string,
+  stage: string,
+  risk_key: string,
+  risk: string,
+  progress: number,
+  owner?: ProjectWorkbenchPerson,
+  participants: ProjectWorkbenchPerson[],
+  current_problem: string,
+  next_action: string,
+  next_action_owner?: ProjectWorkbenchPerson,
+  next_action_due: string,
+  target_date: string,
+  overdue: boolean,
+  due_soon: boolean,
+  stale: boolean,
+  expanded: boolean,
+  activity: OrgProjectActivitySummary,
+  activity_error: boolean,
+  updated_at: string,
+  latest_event_at?: string,
+};
+
+export type ProjectWorkbenchResult = {
+  projects: ProjectWorkbenchProject[],
+  people: ProjectWorkbenchPerson[],
+  attention: {blocked: number, overdue: number, due_soon: number, stale: number, unowned: number},
+  configured_organizations: number,
+};
+
 export type OrgProjectActivitySummary = {
   since: string,
   repositories: OrgProjectActivityRepository[],
@@ -132,6 +189,8 @@ export type OrgProjectActivitySummary = {
   merged_pulls: number,
   release_count: number,
   latest_release_at?: string,
+  progress: OrgProjectProgressEvent[],
+  partial: boolean,
 };
 
 export function cloneJSON<T>(value: T): T {

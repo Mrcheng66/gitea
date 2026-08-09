@@ -14,7 +14,10 @@ import (
 func TestDefaultSchema(t *testing.T) {
 	schema := DefaultSchema()
 	require.NoError(t, Validate(schema))
-	assert.Equal(t, []string{"stage", "progress", "owner", "followers", "start_date", "target_date", "risk", "summary"}, fieldKeys(schema.Fields))
+	assert.Equal(t, []string{
+		"stage", "progress", "owner", "followers", "start_date", "target_date", "risk", "summary",
+		"current_problem", "next_action", "next_action_owner", "next_action_due",
+	}, fieldKeys(schema.Fields))
 
 	stage := schema.Fields[0]
 	assert.Equal(t, []string{"planned", "development", "testing", "released", "paused"}, optionKeys(stage.Options))

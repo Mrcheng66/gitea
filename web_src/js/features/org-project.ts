@@ -60,7 +60,7 @@ export async function initOrgProject() {
       emptyText: el.getAttribute('data-empty-text') || '',
     })),
     mount('[data-org-project-activity]', () => import('../components/orgproject/ProjectActivity.vue'), (el) => ({
-      summary: parseJSON(el, 'data-summary', {since: '', repositories: [], commits: [], open_pulls: 0, merged_pulls: 0, release_count: 0}),
+      summary: parseJSON(el, 'data-summary', {since: '', repositories: [], commits: [], progress: [], open_pulls: 0, merged_pulls: 0, release_count: 0, partial: false}),
       locale: {
         openPulls: el.getAttribute('data-locale-open-pulls') || '',
         mergedPulls: el.getAttribute('data-locale-merged-pulls') || '',
@@ -72,6 +72,12 @@ export async function initOrgProject() {
         empty: el.getAttribute('data-locale-empty') || '',
         since: el.getAttribute('data-locale-since') || '',
       },
+    })),
+    mount('[data-org-project-workbench]', () => import('../components/orgproject/ProjectWorkbench.vue'), (el) => ({
+      workbench: parseJSON(el, 'data-workbench', {projects: [], people: [], attention: {}, configured_organizations: 0}),
+      onlyMine: el.getAttribute('data-only-mine') === 'true',
+      baseLink: el.getAttribute('data-base-link') || '',
+      labels: parseJSON(el, 'data-labels', {}),
     })),
   ]);
 }
