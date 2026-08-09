@@ -1,17 +1,80 @@
 {{template "base/head" .}}
-<div role="main" aria-label="{{.Title}}" class="page-content organization org-projects">
+<div role="main" aria-label="{{.Title}}" class="page-content organization org-projects org-project-create-page">
 	{{template "orgproject/shared/header" .}}
 	<div class="ui container">
 		{{template "base/alert" .}}
-		<h2 class="ui header">{{ctx.Locale.Tr "org_project.new"}}<div class="sub header">{{ctx.Locale.Tr "org_project.new_description"}}</div></h2>
 		{{if .OrgProjectError}}<div class="ui negative message">{{.OrgProjectError}}</div>{{end}}
-		<form class="ui form" method="post" action="{{.OrgProjectBaseLink}}/new">
+		<form class="ui form org-project-create-form" method="post" action="{{.OrgProjectBaseLink}}/new" data-org-project-create-form>
 			{{.CsrfTokenHtml}}
-			<div class="required field"><label for="name">{{ctx.Locale.Tr "org_project.name"}}</label><input id="name" name="name" maxlength="255" value="{{.Form.Name}}" required></div>
-			<div class="required field"><label for="slug">{{ctx.Locale.Tr "org_project.slug"}}</label><input id="slug" name="slug" maxlength="255" value="{{.Form.Slug}}" required><p class="help">{{ctx.Locale.Tr "org_project.slug_help"}}</p></div>
-			<div class="field"><label for="description">{{ctx.Locale.Tr "org_project.description"}}</label><textarea id="description" name="description" rows="4">{{.Form.Description}}</textarea></div>
-			<div data-org-project-form data-schema="{{JsonUtils.EncodeToString .OrgProjectSchema}}" data-values="{{.OrgProjectValues}}" data-members="{{JsonUtils.EncodeToString .OrgProjectMembers}}"></div>
-			<div class="field"><button class="ui primary button">{{ctx.Locale.Tr "org_project.create"}}</button><a class="ui button" href="{{.OrgProjectBaseLink}}/list">{{ctx.Locale.Tr "cancel"}}</a></div>
+			<div class="org-project-create-heading">
+				<div>
+					<a class="org-project-create-breadcrumb" href="{{.OrgProjectBaseLink}}">{{ctx.Locale.Tr "org_project.ledger"}}</a>
+					<h1 class="org-project-page-title">{{ctx.Locale.Tr "org_project.new"}}</h1>
+					<p class="org-project-page-description">{{ctx.Locale.Tr "org_project.new_description"}}</p>
+				</div>
+				<div class="org-project-create-actions">
+					<a class="ui button" href="{{.OrgProjectBaseLink}}/list">{{ctx.Locale.Tr "cancel"}}</a>
+					<button class="ui primary button" type="submit">{{ctx.Locale.Tr "org_project.create"}}</button>
+				</div>
+			</div>
+
+			<div class="org-project-create-workbench">
+				<div class="org-project-create-main">
+					<section class="ui segment org-project-create-panel" aria-labelledby="org-project-create-basic-title">
+						<div class="org-project-create-panel-heading">
+							<div>
+								<h2 id="org-project-create-basic-title">{{ctx.Locale.Tr "org_project.create.basic"}}</h2>
+								<p>{{ctx.Locale.Tr "org_project.create.basic_description"}}</p>
+							</div>
+						</div>
+						<div class="org-project-form-core">
+							<div class="required field"><label for="name">{{ctx.Locale.Tr "org_project.name"}}</label><input id="name" name="name" maxlength="255" value="{{.Form.Name}}" required></div>
+							<div class="required field"><label for="slug">{{ctx.Locale.Tr "org_project.slug"}}</label><input id="slug" name="slug" maxlength="255" value="{{.Form.Slug}}" required><p class="help">{{ctx.Locale.Tr "org_project.slug_help"}}</p></div>
+							<div class="field org-project-form-wide"><label for="description">{{ctx.Locale.Tr "org_project.description"}}</label><textarea id="description" name="description" rows="4">{{.Form.Description}}</textarea></div>
+						</div>
+					</section>
+
+					<div
+						data-org-project-form
+						data-layout="grouped"
+						data-schema="{{JsonUtils.EncodeToString .OrgProjectSchema}}"
+						data-values="{{.OrgProjectValues}}"
+						data-members="{{JsonUtils.EncodeToString .OrgProjectMembers}}"
+						data-plan-title="{{ctx.Locale.Tr "org_project.create.plan"}}"
+						data-plan-description="{{ctx.Locale.Tr "org_project.create.plan_description"}}"
+						data-status-title="{{ctx.Locale.Tr "org_project.create.status"}}"
+						data-status-description="{{ctx.Locale.Tr "org_project.create.status_description"}}"
+						data-other-title="{{ctx.Locale.Tr "org_project.other_fields"}}"
+						data-other-description="{{ctx.Locale.Tr "org_project.create.other_description"}}"
+					></div>
+				</div>
+
+				<aside class="ui segment org-project-create-summary" data-org-project-create-summary data-empty-text="{{ctx.Locale.Tr "org_project.create.not_set"}}">
+					<div class="org-project-create-panel-heading">
+						<div>
+							<h2>{{ctx.Locale.Tr "org_project.create.checklist"}}</h2>
+							<p><span data-summary-complete-count>0</span> / <span data-summary-total-count>1</span> {{ctx.Locale.Tr "org_project.create.confirmed"}}</p>
+						</div>
+					</div>
+					<div class="org-project-create-summary-list">
+						<div class="org-project-create-summary-row" data-summary-control="slug">
+							<span class="org-project-create-summary-state" data-summary-state aria-hidden="true"></span>
+							<span>{{ctx.Locale.Tr "org_project.slug"}}</span>
+							<b data-summary-value>{{ctx.Locale.Tr "org_project.create.not_set"}}</b>
+						</div>
+						{{range .OrgProjectSchema.Fields}}
+							{{if and (not .Archived) (or (eq .Key "stage") (eq .Key "followers") (eq .Key "risk") (eq .Key "owner") (eq .Key "target_date"))}}
+								<div class="org-project-create-summary-row" data-summary-control="org-project-field-{{.Key}}" data-summary-key="{{.Key}}">
+									<span class="org-project-create-summary-state" data-summary-state aria-hidden="true"></span>
+									<span>{{.Label}}</span>
+									<b data-summary-value>{{ctx.Locale.Tr "org_project.create.not_set"}}</b>
+								</div>
+							{{end}}
+						{{end}}
+					</div>
+					<p class="org-project-create-summary-help">{{ctx.Locale.Tr "org_project.create.checklist_help"}}</p>
+				</aside>
+			</div>
 		</form>
 	</div>
 </div>

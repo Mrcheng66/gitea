@@ -18,6 +18,21 @@ export type OrgProjectField = {
   options?: OrgProjectOption[],
 };
 
+export type ProjectFormGroupKey = 'plan' | 'status' | 'other';
+
+const planFieldKeys = new Set(['stage', 'owner', 'followers', 'start_date', 'target_date']);
+const statusFieldKeys = new Set(['progress', 'risk', 'summary', 'current_problem', 'next_action', 'next_action_owner', 'next_action_due']);
+
+export function groupProjectFields(fields: OrgProjectField[]): Record<ProjectFormGroupKey, OrgProjectField[]> {
+  const groups: Record<ProjectFormGroupKey, OrgProjectField[]> = {plan: [], status: [], other: []};
+  for (const field of fields) {
+    if (planFieldKeys.has(field.key)) groups.plan.push(field);
+    else if (statusFieldKeys.has(field.key)) groups.status.push(field);
+    else groups.other.push(field);
+  }
+  return groups;
+}
+
 export type OrgProjectSort = {
   field_key: string,
   direction: 'asc' | 'desc',
