@@ -123,3 +123,6 @@ Makefile.local
 
 # Production deployment environment
 /ops/compose/.env
+
+# Local visual brainstorming previews
+/.superpowers/
