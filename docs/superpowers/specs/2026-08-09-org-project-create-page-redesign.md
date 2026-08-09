@@ -1,235 +1,235 @@
-# Organization Project Create Page Redesign
+# 组织项目新建页重设计
 
-## Summary
+## 概述
 
-Redesign the organization project create page as a guided workbench. The page keeps the existing Gitea organization navigation, native form submission, configured project-field schema, permission checks, and server-side error handling. The change reorganizes the form into clear sections, adds a read-only creation checklist, and introduces responsive behavior that removes the excessive whitespace and weak hierarchy in the current page.
+将组织项目的新建页重设计为引导式工作台。页面继续沿用现有的 Gitea 组织导航、原生表单提交、可配置项目字段、权限判断和服务端错误处理。此次改动通过信息分组、只读创建检查区和响应式布局，解决当前页面留白过多、层级较弱和字段难以快速浏览的问题。
 
-The approved direction is option A, **Guided Workbench**.
+已确认采用 A 方案：**引导式工作台**。
 
-## Goals
+## 目标
 
-- Make the form easy to scan before users begin entering data.
-- Group fields by user intent instead of presenting one long undifferentiated grid.
-- Keep the primary action visible without duplicating it.
-- Provide a compact, read-only summary of important creation choices.
-- Preserve configured custom fields and the current native POST contract.
-- Work without horizontal scrolling at 320, 375, 414, and 768 pixels.
-- Match the existing organization project ledger and detail-page design system.
+- 让用户在填写前即可快速理解表单结构。
+- 按用户意图组织字段，避免展示为缺乏层级的连续网格。
+- 保持主操作清晰可见，且不重复出现。
+- 用紧凑的只读区域汇总关键创建信息。
+- 保留自定义字段和现有原生提交协议。
+- 在 320、375、414 和 768 像素宽度下不产生横向滚动。
+- 与现有组织项目总账和详情页的设计系统保持一致。
 
-## Non-goals
+## 非目标
 
-- No route, permission, model, schema, or persistence changes.
-- No changes to repository project boards under repository routes.
-- No wizard, autosave, modal, or multi-step submission flow.
-- No redesign of the organization project detail edit form.
-- No new configuration concept for assigning custom fields to sections.
-- No changes to the create button's submission semantics.
+- 不修改路由、权限、模型、配置结构或持久化逻辑。
+- 不修改仓库路由下的项目看板。
+- 不引入向导、自动保存、弹窗或多步提交。
+- 不重设计组织项目详情编辑表单。
+- 不为自定义字段新增“所属分组”配置。
+- 不改变创建按钮的提交语义。
 
-## Design System
+## 设计系统
 
-- Genre: modern-minimal developer tool.
-- Macrostructure: Guided Workbench, derived from the existing Workbench family.
-- Theme: Gitea native through the existing project tokens and Gitea theme variables.
-- Typography: existing Gitea sans and monospace families; headings remain upright.
-- Spacing: existing four-pixel project scale.
-- Enrichment: none; the form is the page content.
-- Motion: no entrance animation. Only existing control feedback is retained.
-- Navigation: inherit the global and organization project navigation.
+- 风格：现代极简的研发工具界面。
+- 页面结构：从现有工作台体系派生的引导式工作台。
+- 主题：通过现有项目令牌和 Gitea 主题变量继承原生视觉。
+- 字体：沿用 Gitea 的无衬线和等宽字体，标题保持正体。
+- 间距：沿用现有四像素项目间距体系。
+- 装饰：不增加装饰图形，表单本身就是页面内容。
+- 动效：不做入场动画，只保留现有控件反馈。
+- 导航：继承全局导航和组织项目导航。
 
-## Page Structure
+## 页面结构
 
-### Heading
+### 页面标题
 
-The page starts with a compact breadcrumb, title, and existing description. The action group sits at the upper right:
+页面以紧凑的面包屑、标题和现有说明开头，操作区位于右上角：
 
-- Secondary action: Cancel.
-- Primary action: Create project.
+- 次操作：取消。
+- 主操作：创建项目。
 
-The primary action appears once. It stays visible near the page heading on desktop and moves below the heading copy on narrow screens. It is not duplicated in the sidebar or at the form bottom.
+主操作只出现一次。桌面端位于页面标题旁，窄屏下移动到标题说明之后；侧栏和表单底部不重复放置。
 
-### Desktop layout
+### 桌面布局
 
-At wide widths, the form uses a two-column workbench:
+宽屏使用双栏工作台：
 
-- Main column: three stacked form panels plus an optional fourth panel.
-- Sidebar: a sticky, read-only creation checklist.
-- Main-to-sidebar ratio: approximately 1.8:0.68 with the sidebar capped near 18rem.
+- 主栏：三个固定表单面板，以及一个按需出现的面板。
+- 侧栏：吸顶的只读创建检查区。
+- 主栏与侧栏比例约为 1.8:0.68，侧栏宽度上限约为 18rem。
 
-The main column contains:
+主栏包含：
 
-1. **Basic information**
-   - Name
-   - Slug
-   - Description
-2. **Plan and responsibility**
-   - Stage
-   - Owner
-   - Followers
-   - Start date
-   - Target date
-3. **Status and action**
-   - Progress
-   - Risk
-   - Summary
-   - Current problem
-   - Next action
-   - Next action owner
-   - Next action due date
-4. **Other information**, rendered only when the active schema contains fields not recognized by the three groups above.
+1. **基本信息**
+   - 名称
+   - 路径标识
+   - 描述
+2. **计划与责任**
+   - 阶段
+   - 负责人
+   - 跟进人
+   - 开始日期
+   - 目标日期
+3. **状态与行动**
+   - 进度
+   - 风险
+   - 项目摘要
+   - 当前问题
+   - 下一步行动
+   - 行动负责人
+   - 行动期限
+4. **其他信息**：仅在当前配置包含前三组未识别的活动字段时展示。
 
-Long text, multi-select, and member-array controls span the full main column. Other fields use a two-column grid.
+长文本、多选和成员数组控件占满主栏宽度，其他字段使用双列网格。
 
-### Creation checklist
+### 创建检查区
 
-The sidebar summarizes these important values when they exist in the active form:
+侧栏在对应字段存在时汇总以下关键值：
 
-- Slug
-- Stage
-- Followers
-- Risk
-- Owner
-- Target date
+- 路径标识
+- 阶段
+- 跟进人
+- 风险
+- 负责人
+- 目标日期
 
-Each row includes a text status in addition to its visual marker. Empty optional values display a neutral "Not set" state. The checklist is informational and never disables or intercepts form submission.
+每一行除视觉标记外还显示文字状态。空的可选值显示中性的“未设置”。检查区只提供信息，不禁用或拦截表单提交。
 
-The checklist listens to native `input` and `change` events through event delegation on the create form. It reads current native input and select values, including the controls rendered by Vue. It does not own form state and does not write values back into controls.
+检查区通过创建表单上的事件代理监听原生 `input` 和 `change` 事件，读取包括 Vue 渲染控件在内的当前输入值。它不拥有表单状态，也不向控件回写数据。
 
-### Responsive order
+### 响应式顺序
 
-Below the workbench breakpoint, the page becomes a single column in this order:
+低于工作台断点后，页面按以下顺序变为单栏：
 
-1. Heading and actions
-2. Basic information
-3. Plan and responsibility
-4. Status and action
-5. Other information, when present
-6. Creation checklist
+1. 页面标题和操作
+2. 基本信息
+3. 计划与责任
+4. 状态与行动
+5. 其他信息（存在时）
+6. 创建检查区
 
-The sidebar stops being sticky. All form grids collapse to one column. Buttons stay on one line and expand only when the available width requires it.
+侧栏停止吸顶，所有字段网格折叠为单列。按钮文字保持单行，仅在宽度不足时扩展为整行。
 
-## Component Boundaries
+## 组件边界
 
-### Server template
+### 服务端模板
 
-`templates/orgproject/new.tmpl` continues to own:
+`templates/orgproject/new.tmpl` 继续负责：
 
-- The native `form` element and POST action.
-- CSRF markup.
-- Name, slug, and description controls.
-- Error message rendering.
-- Heading, action group, main workbench wrapper, and checklist markup.
-- Localized section and checklist labels exposed through template markup or data attributes.
+- 原生 `form` 元素和提交地址。
+- 跨站请求伪造防护字段。
+- 名称、路径标识和描述控件。
+- 错误信息渲染。
+- 页面标题、操作区、工作台结构和检查区标记。
+- 通过模板标记或数据属性提供本地化的分组与检查区文案。
 
-The template marks the create form with a dedicated data attribute so the summary enhancer cannot run on the detail edit form.
+模板为创建表单增加专用数据属性，确保检查区逻辑不会在详情编辑表单中运行。
 
-### Configured-field form
+### 可配置字段表单
 
-`ProjectForm.vue` gains an explicit presentation mode:
+`ProjectForm.vue` 新增明确的展示模式：
 
-- `plain`, the default, preserves the current detail edit form.
-- `grouped`, used only by the create page.
+- `plain`：默认值，保持当前详情编辑表单不变。
+- `grouped`：仅供新建页使用。
 
-In grouped mode, fields are partitioned by known default-schema keys. Unknown active fields fall into the Other information group in their existing schema order. The hidden `values` JSON input and all initialization and serialization behavior remain unchanged.
+在分组模式下，字段依据已知的默认配置键分组。无法识别的活动字段按现有配置顺序进入“其他信息”。隐藏的 `values` JSON 输入框、初始化和序列化行为保持不变。
 
-To avoid duplicating the rendering logic for every supported field type, a focused `ProjectFormField.vue` component renders one configured field. It receives the field definition, current value, and members, then updates the parent value through `v-model`. It does not serialize or submit data itself.
+为避免重复实现所有字段类型的渲染逻辑，新增职责单一的 `ProjectFormField.vue`，负责渲染一个可配置字段。它接收字段定义、当前值和成员列表，通过 `v-model` 更新父组件状态，但不自行序列化或提交数据。
 
-### Checklist enhancer
+### 检查区增强逻辑
 
-`web_src/js/features/org-project.ts` initializes the create checklist after the existing Vue mounts complete. The enhancer:
+`web_src/js/features/org-project.ts` 在现有 Vue 组件挂载完成后初始化创建检查区。增强逻辑：
 
-- Uses one delegated listener on the create form.
-- Resolves current labels for single- and multi-select controls.
-- Updates only checklist text and state classes.
-- Leaves the checklist static if its expected form control is absent.
-- Does nothing when the create-page data attribute is absent.
+- 在创建表单上使用一个事件代理监听器。
+- 解析单选、多选和成员选择控件的当前显示文本。
+- 只更新检查区文字和状态类。
+- 预期控件不存在时保持静态状态，不抛出错误。
+- 页面不存在创建表单标记时不执行任何操作。
 
-The enhancer remains a progressive enhancement. A failure in this code cannot prevent the native form from submitting.
+检查区属于渐进增强。该逻辑失效时，原生表单仍可正常提交。
 
-### Styling
+### 样式
 
-`web_src/css/features/org-project.css` receives page-scoped styles for:
+`web_src/css/features/org-project.css` 增加限定在新建页范围内的样式：
 
-- The create-page heading and actions.
-- Workbench grid and stacked form panels.
-- Panel headers and field grids.
-- Sticky checklist and its statuses.
-- Narrow-screen ordering and one-column fields.
+- 页面标题和操作区。
+- 工作台网格和纵向表单面板。
+- 面板标题与字段网格。
+- 吸顶检查区及其状态。
+- 窄屏排序和单列字段。
 
-All colors, fonts, spacing, radii, and durations reference the existing project or Gitea tokens. No new hard-coded brand palette or global style override is introduced.
+所有颜色、字体、间距、圆角和时长继续引用现有项目或 Gitea 令牌，不新增硬编码品牌色或全局样式覆盖。
 
-## Data Flow
+## 数据流
 
-1. The server renders the native form, old core values, configured schema, old configured values, and organization members.
-2. `ProjectForm.vue` initializes configured values exactly as it does today and renders grouped or plain presentation according to its prop.
-3. Vue continues to serialize configured values into the hidden `values` input.
-4. The checklist enhancer reads visible control values after Vue mounting and on subsequent native form events.
-5. The browser submits the same core fields and hidden `values` JSON to the existing POST route.
-6. The server performs the existing validation and either re-renders the page with values and an error or redirects after successful creation.
+1. 服务端渲染原生表单、核心字段旧值、配置结构、可配置字段旧值和组织成员。
+2. `ProjectForm.vue` 按现有方式初始化可配置字段，并依据属性渲染分组或普通布局。
+3. Vue 继续把可配置字段序列化到隐藏的 `values` 输入框。
+4. 检查区增强逻辑在 Vue 挂载后读取当前控件值，并监听后续原生表单事件。
+5. 浏览器向现有提交路由发送相同的核心字段和隐藏 `values` JSON。
+6. 服务端执行现有校验，失败时携带旧值和错误重绘页面，成功时跳转。
 
-No checklist state is submitted to the server.
+检查区状态不会提交到服务端。
 
-## Validation and Error Handling
+## 校验与错误处理
 
-- Existing HTML `required` attributes remain the first validation layer.
-- Browser validation continues to focus the first invalid native control.
-- The create button remains enabled; the checklist does not create a second validation system.
-- Existing `OrgProjectError` rendering stays above the form workbench.
-- Re-rendered core and configured values repopulate both the form and checklist.
-- Missing or unknown configured field keys render under Other information instead of being discarded.
-- If JavaScript fails, core fields and native submission remain available. Configured fields retain the project's current JavaScript dependency and failure behavior.
+- 现有 HTML `required` 属性继续作为第一层校验。
+- 浏览器校验继续聚焦第一个无效的原生控件。
+- 创建按钮保持可用，检查区不建立第二套校验逻辑。
+- 现有 `OrgProjectError` 继续显示在表单工作台上方。
+- 服务端重绘后，核心字段和可配置字段旧值会同时恢复到表单与检查区。
+- 缺失或未知的配置字段键进入“其他信息”，不会被丢弃。
+- JavaScript 失效时，核心字段和原生提交仍可用；可配置字段维持项目当前已有的 JavaScript 依赖和失败表现。
 
-## Accessibility
+## 无障碍
 
-- Each panel has a visible heading and an `aria-labelledby` relationship where needed.
-- Existing label-to-control associations and required semantics remain intact.
-- Checklist markers are paired with visible text; status is never color-only.
-- The checklist is not an `aria-live` region, avoiding noisy announcements on every keystroke.
-- The page preserves native tab order and existing Gitea focus styles.
-- Buttons and links keep concise, non-wrapping labels.
-- The narrow layout has no fixed-width form controls or horizontal page scrolling.
+- 每个面板都有可见标题，并按需建立 `aria-labelledby` 关联。
+- 保留现有标签与控件关联以及必填语义。
+- 检查区标记搭配可见文字，状态不只依赖颜色。
+- 检查区不使用 `aria-live`，避免每次输入都触发冗余播报。
+- 页面保留原生键盘顺序和 Gitea 现有焦点样式。
+- 按钮和链接使用简短、不换行的文案。
+- 窄屏布局不包含固定宽度控件，也不产生页面横向滚动。
 
-## Testing
+## 测试
 
-### Vue unit tests
+### Vue 单元测试
 
-Extend `ProjectForm.test.ts` to verify:
+扩展 `ProjectForm.test.ts`，验证：
 
-- Grouped mode assigns known keys to the approved sections.
-- Unknown active fields render in Other information in schema order.
-- Plain mode preserves the existing flat field layout.
-- Every configured field type still updates the hidden `values` JSON correctly.
+- 分组模式将已知字段放入已确认的分组。
+- 未知活动字段按配置顺序进入“其他信息”。
+- 普通模式保持现有平铺布局。
+- 每种可配置字段类型仍能正确更新隐藏的 `values` JSON。
 
-Add focused tests for `ProjectFormField.vue` only where field rendering behavior is not already covered through `ProjectForm.test.ts`.
+仅在 `ProjectForm.test.ts` 无法覆盖单字段渲染行为时，为 `ProjectFormField.vue` 增加针对性测试。
 
-### Feature unit tests
+### 功能单元测试
 
-Add `web_src/js/features/org-project.test.ts` to verify:
+新增 `web_src/js/features/org-project.test.ts`，验证：
 
-- Checklist initialization reads existing core and mounted Vue controls.
-- Text inputs, single selects, multi-selects, member selects, and dates update their summary rows.
-- Missing controls remain in a neutral state without throwing.
-- Pages without the create-form marker are ignored.
+- 检查区初始化时读取现有核心字段和已挂载的 Vue 控件。
+- 文本、单选、多选、成员选择和日期控件都能更新对应摘要。
+- 控件缺失时保持中性状态且不抛出错误。
+- 没有创建表单标记的页面会被忽略。
 
-### End-to-end coverage
+### 端到端测试
 
-Extend `tests/e2e/org-project.test.ts` to verify:
+扩展 `tests/e2e/org-project.test.ts`，验证：
 
-- The grouped create page renders the approved section order.
-- A project can still be created through the native form.
-- Server-side errors remain visible with entered values preserved.
-- The page has no horizontal overflow at the required mobile widths.
+- 分组后的新建页按已确认顺序展示。
+- 项目仍可通过原生表单成功创建。
+- 服务端错误保持可见，且已输入值不会丢失。
+- 要求的移动端宽度下不产生横向滚动。
 
-### Required checks
+### 必须执行的检查
 
-- Run the focused Vitest files.
-- Run the focused organization-project Playwright file when the local E2E environment is available.
-- Run `make lint-js`.
-- Run `make lint-css`.
-- Run `make lint-templates`.
+- 运行相关的 Vitest 文件。
+- 本地端到端环境可用时，运行组织项目 Playwright 文件。
+- 运行 `make lint-js`。
+- 运行 `make lint-css`。
+- 运行 `make lint-templates`。
 
-## Expected File Changes
+## 预计文件变更
 
-Modify:
+修改：
 
 - `templates/orgproject/new.tmpl`
 - `web_src/js/components/orgproject/ProjectForm.vue`
@@ -240,23 +240,23 @@ Modify:
 - `options/locale/locale_zh-CN.json`
 - `tests/e2e/org-project.test.ts`
 
-Create:
+新增：
 
 - `web_src/js/components/orgproject/ProjectFormField.vue`
 - `web_src/js/features/org-project.test.ts`
 
-Delete:
+删除：
 
-- None.
+- 无。
 
-## Acceptance Criteria
+## 验收标准
 
-- The create page matches the approved Guided Workbench layout.
-- Desktop users see grouped panels and a sticky read-only checklist.
-- Narrow screens show one ordered column with the checklist after the form fields.
-- The detail edit form retains its current plain layout.
-- Custom configured fields remain visible, ordered, editable, and serialized.
-- Existing successful creation, validation, permission, and error paths remain unchanged.
-- The checklist accurately reflects supported current values but never controls submission.
-- The page has no horizontal scrolling at 320, 375, 414, or 768 pixels.
-- No production files are deleted.
+- 新建页符合已确认的引导式工作台布局。
+- 桌面端展示分组面板和吸顶的只读检查区。
+- 窄屏按确定顺序显示单栏，并将检查区放在表单字段之后。
+- 详情编辑表单保持当前普通布局。
+- 自定义字段仍然可见、有序、可编辑并正确序列化。
+- 现有创建成功、校验、权限和错误路径不变。
+- 检查区准确反映支持的当前值，但不控制提交。
+- 页面在 320、375、414 和 768 像素宽度下无横向滚动。
+- 不删除任何生产文件。
