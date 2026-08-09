@@ -104,6 +104,7 @@ export async function initOrgProject() {
     })),
     mount('[data-org-project-config-editor]', () => import('../components/orgproject/ConfigEditor.vue'), (el) => ({
       schema: parseJSON(el, 'data-schema', {schema_version: 1, fields: [], list_view: {columns: []}, filters: [], metrics: []}),
+      labels: parseJSON(el, 'data-labels', {}),
     })),
     mount('[data-org-project-editor-teams]', () => import('../components/orgproject/EditorTeamsEditor.vue'), (el) => ({
       teams: parseJSON(el, 'data-teams', []),

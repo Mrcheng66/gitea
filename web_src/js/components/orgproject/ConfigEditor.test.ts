@@ -3,6 +3,8 @@ import ConfigEditor from './ConfigEditor.vue';
 import {normalizeSchema, validateSchemaClient} from './types.ts';
 import type {OrgProjectSchema} from './types.ts';
 
+const labels: Record<string, string> = {addField: 'Add field', newField: 'Field {n}'};
+
 function schema(fields: OrgProjectSchema['fields']): OrgProjectSchema {
   return {schema_version: 1, fields, list_view: {columns: []}, filters: [], metrics: []};
 }
@@ -10,7 +12,7 @@ function schema(fields: OrgProjectSchema['fields']): OrgProjectSchema {
 describe('ConfigEditor schema helpers', () => {
   test('mounts reactive schema and serializes normalized config', async () => {
     const el = document.createElement('div');
-    expect(() => createApp(ConfigEditor, {schema: schema([])}).mount(el)).not.toThrow();
+    expect(() => createApp(ConfigEditor, {schema: schema([]), labels}).mount(el)).not.toThrow();
     await nextTick();
 
     const textarea = el.querySelector<HTMLTextAreaElement>('textarea[name="schema"]')!;
@@ -23,6 +25,23 @@ describe('ConfigEditor schema helpers', () => {
     expect(JSON.parse(textarea.value).fields).toEqual([
       {key: 'field_1', label: 'Field 1', type: 'short_text', order: 0},
     ]);
+  });
+
+  test('renders indexed configuration sections and checkbox column choices', async () => {
+    const el = document.createElement('div');
+    createApp(ConfigEditor, {schema: schema([
+      {key: 'stage', label: '阶段', type: 'single_select', order: 0},
+      {key: 'owner', label: '负责人', type: 'member', order: 1},
+    ]), labels}).mount(el);
+    await nextTick();
+
+    expect(el.querySelector('#org-project-settings-fields')).not.toBeNull();
+    expect(el.querySelector('#org-project-settings-list-view')).not.toBeNull();
+    expect(el.querySelector('#org-project-settings-filters')).not.toBeNull();
+    expect(el.querySelector('#org-project-settings-metrics')).not.toBeNull();
+    expect(el.querySelector('select[multiple]')).toBeNull();
+    expect(el.querySelector<HTMLInputElement>('input[type="checkbox"][value="stage"]')).not.toBeNull();
+    expect(el.querySelector<HTMLInputElement>('input[type="checkbox"][value="owner"]')).not.toBeNull();
   });
 
   test('normalizes stable field and option ordering', () => {

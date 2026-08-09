@@ -23,6 +23,27 @@ type editorTeamDisplay struct {
 	Deleted     bool   `json:"deleted"`
 }
 
+func configEditorLabels(ctx *context.Context) map[string]string {
+	keys := []string{
+		"fields", "fieldsDescription", "fieldCount", "addField", "newField", "untitledField", "emptyFields",
+		"key", "emptyKey", "label", "type", "required", "archived", "options", "optionKey", "optionLabel",
+		"newOption", "addOption", "removeOption", "remove", "moveUp", "moveDown", "restore", "archive",
+		"listView", "listViewDescription", "columns", "columnsDescription", "defaultSorting", "addSort", "emptySorts",
+		"field", "direction", "ascending", "descending", "removeSort", "filters", "filtersDescription", "addFilter",
+		"newFilter", "emptyFilters", "operator", "equals", "notEqual", "contains", "isEmpty", "isNotEmpty",
+		"atLeast", "atMost", "containsMember", "removeFilter", "metrics", "metricsDescription", "addMetric",
+		"newMetric", "emptyMetrics", "aggregation", "count", "average", "valueField", "projects", "groupBy", "none",
+		"removeMetric", "validationTitle", "invalidFieldKey", "duplicateFieldKey", "fieldNeedsLabel", "fieldNeedsOption",
+		"type_short_text", "type_long_text", "type_single_select", "type_multi_select", "type_integer", "type_decimal",
+		"type_percent", "type_date", "type_date_time", "type_boolean", "type_member", "type_member_array",
+	}
+	labels := make(map[string]string, len(keys))
+	for _, key := range keys {
+		labels[key] = string(ctx.Tr("org_project.settings.editor." + key))
+	}
+	return labels
+}
+
 // Settings renders the organization project configuration page.
 func Settings(ctx *context.Context) {
 	ctx.Data["Title"] = ctx.Tr("org_project.settings.title")
@@ -52,6 +73,7 @@ func Settings(ctx *context.Context) {
 	ctx.Data["OrgProjectConfigDraft"] = draft
 	ctx.Data["OrgProjectConfigSchema"] = draft.Payload
 	ctx.Data["OrgProjectConfigHistory"] = history
+	ctx.Data["OrgProjectConfigLabels"] = configEditorLabels(ctx)
 	if err := setEditorTeamData(ctx); err != nil {
 		ctx.ServerError("LoadOrgProjectEditorTeams", err)
 		return

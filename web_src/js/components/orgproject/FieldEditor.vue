@@ -1,26 +1,25 @@
 <script setup lang="ts">
 import type {OrgProjectField, OrgProjectFieldType} from './types.ts';
 
+const props = defineProps<{labels: Record<string, string>}>();
 const fields = defineModel<OrgProjectField[]>({required: true});
 
-const fieldTypes: Array<{value: OrgProjectFieldType, label: string}> = [
-  {value: 'short_text', label: 'Short text'},
-  {value: 'long_text', label: 'Long text'},
-  {value: 'single_select', label: 'Single select'},
-  {value: 'multi_select', label: 'Multi select'},
-  {value: 'integer', label: 'Integer'},
-  {value: 'decimal', label: 'Decimal'},
-  {value: 'percent', label: 'Percent'},
-  {value: 'date', label: 'Date'},
-  {value: 'date_time', label: 'Date and time'},
-  {value: 'boolean', label: 'Boolean'},
-  {value: 'member', label: 'Member'},
-  {value: 'member_array', label: 'Members'},
+const fieldTypes: OrgProjectFieldType[] = [
+  'short_text', 'long_text', 'single_select', 'multi_select', 'integer', 'decimal',
+  'percent', 'date', 'date_time', 'boolean', 'member', 'member_array',
 ];
+
+function label(key: string) {
+  return props.labels[key] || key;
+}
+
+function format(key: string, value: number) {
+  return label(key).replace('{n}', String(value));
+}
 
 function addField() {
   const index = fields.value.length + 1;
-  fields.value.push({key: `field_${index}`, label: `Field ${index}`, type: 'short_text', order: fields.value.length});
+  fields.value.push({key: `field_${index}`, label: format('newField', index), type: 'short_text', order: fields.value.length});
 }
 
 function archiveOrRemove(index: number) {
@@ -43,36 +42,64 @@ function move(index: number, offset: number) {
 function addOption(field: OrgProjectField) {
   field.options ??= [];
   const index = field.options.length + 1;
-  field.options.push({key: `option_${index}`, label: `Option ${index}`, order: field.options.length});
+  field.options.push({key: `option_${index}`, label: format('newOption', index), order: field.options.length});
 }
 </script>
 
 <template>
-  <section class="org-project-editor-section">
-    <div class="flex-left-right tw-mb-3"><h3 class="ui header tw-m-0">Fields</h3><button type="button" class="ui small button" @click="addField">Add field</button></div>
-    <div class="org-project-editor-list">
-      <article v-for="(field, index) in fields" :key="`${field.key}-${index}`" class="ui segment org-project-editor-item" :class="{disabled: field.archived}">
-        <div class="org-project-editor-grid">
-          <div class="field"><label>Key</label><input v-model.trim="field.key" :disabled="field.archived"></div>
-          <div class="field"><label>Label</label><input v-model.trim="field.label" :disabled="field.archived"></div>
-          <div class="field"><label>Type</label><select v-model="field.type" :disabled="field.archived"><option v-for="type in fieldTypes" :key="type.value" :value="type.value">{{ type.label }}</option></select></div>
-          <label class="org-project-inline-check"><input v-model="field.required" type="checkbox" :disabled="field.archived"> Required</label>
-        </div>
-        <div v-if="field.type === 'single_select' || field.type === 'multi_select'" class="tw-mt-3">
-          <div v-for="(option, optionIndex) in field.options" :key="optionIndex" class="org-project-option-row">
-            <input v-model.trim="option.key" aria-label="Option key" :disabled="field.archived">
-            <input v-model.trim="option.label" aria-label="Option label" :disabled="field.archived">
-            <button type="button" class="ui icon button" aria-label="Remove option" :disabled="field.archived" @click="field.options!.splice(optionIndex, 1)">×</button>
+  <section id="org-project-settings-fields" class="ui segment org-project-settings-panel" aria-labelledby="org-project-settings-fields-title">
+    <header class="org-project-settings-panel-heading">
+      <div>
+        <h3 id="org-project-settings-fields-title">{{ label('fields') }}</h3>
+        <p>{{ label('fieldsDescription') }}</p>
+      </div>
+      <div class="org-project-settings-panel-tools">
+        <span class="org-project-settings-count">{{ format('fieldCount', fields.length) }}</span>
+        <button type="button" class="ui small primary button" @click="addField">{{ label('addField') }}</button>
+      </div>
+    </header>
+    <div v-if="fields.length" class="org-project-editor-list">
+      <details v-for="(field, index) in fields" :key="`${field.key}-${index}`" class="org-project-field-item" :class="{disabled: field.archived}" :open="index === 0">
+        <summary class="org-project-field-summary">
+          <span class="org-project-rule-index">{{ String(index + 1).padStart(2, '0') }}</span>
+          <span class="org-project-field-identity">
+            <strong>{{ field.label || label('untitledField') }}</strong>
+            <small>{{ field.key || label('emptyKey') }}</small>
+          </span>
+          <span class="org-project-field-type">{{ label(`type_${field.type}`) }}</span>
+          <span v-if="field.required" class="org-project-field-state">{{ label('required') }}</span>
+          <span v-if="field.archived" class="org-project-field-state is-archived">{{ label('archived') }}</span>
+        </summary>
+        <div class="org-project-field-body">
+          <div class="org-project-editor-grid org-project-field-grid">
+            <div class="field"><label>{{ label('key') }}</label><input v-model.trim="field.key" :disabled="field.archived"></div>
+            <div class="field"><label>{{ label('label') }}</label><input v-model.trim="field.label" :disabled="field.archived"></div>
+            <div class="field"><label>{{ label('type') }}</label><select v-model="field.type" :disabled="field.archived"><option v-for="type in fieldTypes" :key="type" :value="type">{{ label(`type_${type}`) }}</option></select></div>
+            <label class="org-project-inline-check"><input v-model="field.required" type="checkbox" :disabled="field.archived"> {{ label('required') }}</label>
           </div>
-          <button type="button" class="ui tiny button tw-mt-2" :disabled="field.archived" @click="addOption(field)">Add option</button>
+          <div v-if="field.type === 'single_select' || field.type === 'multi_select'" class="org-project-field-options">
+            <div class="org-project-field-subheading">
+              <strong>{{ label('options') }}</strong>
+              <button type="button" class="ui tiny button" :disabled="field.archived" @click="addOption(field)">{{ label('addOption') }}</button>
+            </div>
+            <div v-for="(option, optionIndex) in field.options" :key="optionIndex" class="org-project-option-row">
+              <span class="org-project-rule-index">{{ optionIndex + 1 }}</span>
+              <div class="field"><label>{{ label('optionKey') }}</label><input v-model.trim="option.key" :disabled="field.archived"></div>
+              <div class="field"><label>{{ label('optionLabel') }}</label><input v-model.trim="option.label" :disabled="field.archived"></div>
+              <button type="button" class="ui tiny basic red button org-project-rule-remove" :aria-label="label('removeOption')" :disabled="field.archived" @click="field.options!.splice(optionIndex, 1)">{{ label('remove') }}</button>
+            </div>
+          </div>
+          <footer class="org-project-field-actions">
+            <div class="org-project-order-actions">
+              <button type="button" class="ui tiny basic button" :disabled="index === 0" @click="move(index, -1)">{{ label('moveUp') }}</button>
+              <button type="button" class="ui tiny basic button" :disabled="index === fields.length - 1" @click="move(index, 1)">{{ label('moveDown') }}</button>
+            </div>
+            <button v-if="field.archived" type="button" class="ui tiny button" @click="restore(index)">{{ label('restore') }}</button>
+            <button v-else type="button" class="ui tiny basic red button" @click="archiveOrRemove(index)">{{ label('archive') }}</button>
+          </footer>
         </div>
-        <div class="flex-text-block tw-mt-3">
-          <button type="button" class="ui tiny basic button" :disabled="index === 0" @click="move(index, -1)">Move up</button>
-          <button type="button" class="ui tiny basic button" :disabled="index === fields.length - 1" @click="move(index, 1)">Move down</button>
-          <button v-if="field.archived" type="button" class="ui tiny button" @click="restore(index)">Restore</button>
-          <button v-else type="button" class="ui tiny basic red button" @click="archiveOrRemove(index)">Archive</button>
-        </div>
-      </article>
+      </details>
     </div>
+    <div v-else class="org-project-settings-empty">{{ label('emptyFields') }}</div>
   </section>
 </template>

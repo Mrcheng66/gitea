@@ -1,6 +1,14 @@
 [
   {
     "date": "2026-08-09",
+    "scope": "project configuration",
+    "macrostructure": "Index-First",
+    "theme": "Gitea native",
+    "enrichment": "none",
+    "brief": "Organization project configuration console redesign"
+  },
+  {
+    "date": "2026-08-09",
     "scope": "app",
     "macrostructure": "Workbench",
     "theme": "Gitea native",

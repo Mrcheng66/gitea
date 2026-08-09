@@ -10,6 +10,18 @@ test('publish configuration and create a native organization project', async ({p
 
   try {
     await page.goto(`/org/${orgName}/settings/projects`);
+    await expect(page.getByRole('heading', {name: 'Project fields'})).toBeVisible();
+    await expect(page.getByRole('heading', {name: 'List view'})).toBeVisible();
+    await expect(page.getByRole('heading', {name: 'Filters'})).toBeVisible();
+    await expect(page.getByRole('heading', {name: 'Metrics'})).toBeVisible();
+    await expect(page.locator('.org-project-column-option input[value="stage"]')).toBeAttached();
+
+    for (const width of [320, 375, 414, 768]) {
+      await page.setViewportSize({width, height: 800});
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    }
+    await page.setViewportSize({width: 1280, height: 800});
+
     await page.getByRole('button', {name: 'Publish draft'}).click();
     await expect(page.getByText('The project configuration has been published.')).toBeVisible();
 

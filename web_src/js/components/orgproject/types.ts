@@ -267,15 +267,17 @@ export function normalizeSchema(schema: OrgProjectSchema): OrgProjectSchema {
   return normalized;
 }
 
-export function validateSchemaClient(schema: OrgProjectSchema): string[] {
+export function validateSchemaClient(schema: OrgProjectSchema, labels: Record<string, string> = {}): string[] {
   const errors: string[] = [];
   const keys = new Set<string>();
+  const message = (key: string, value: string, fallback: string) => (labels[key] || fallback).replace('{value}', value);
   for (const field of schema.fields) {
-    if (!/^[a-z][a-z0-9_]{0,63}$/.test(field.key)) errors.push(`Invalid field key: ${field.key || '(empty)'}`);
-    if (keys.has(field.key)) errors.push(`Duplicate field key: ${field.key}`);
+    const fieldKey = field.key || labels.emptyKey || '(empty)';
+    if (!/^[a-z][a-z0-9_]{0,63}$/.test(field.key)) errors.push(message('invalidFieldKey', fieldKey, 'Invalid field key: {value}'));
+    if (keys.has(field.key)) errors.push(message('duplicateFieldKey', fieldKey, 'Duplicate field key: {value}'));
     keys.add(field.key);
-    if (!field.label.trim()) errors.push(`Field ${field.key || '(empty)'} needs a label`);
-    if ((field.type === 'single_select' || field.type === 'multi_select') && !field.options?.length) errors.push(`Field ${field.key} needs at least one option`);
+    if (!field.label.trim()) errors.push(message('fieldNeedsLabel', fieldKey, 'Field {value} needs a label'));
+    if ((field.type === 'single_select' || field.type === 'multi_select') && !field.options?.length) errors.push(message('fieldNeedsOption', fieldKey, 'Field {value} needs at least one option'));
   }
   return errors;
 }

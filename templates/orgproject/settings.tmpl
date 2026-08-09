@@ -1,72 +1,115 @@
-{{template "org/settings/layout_head" (dict "pageClass" "organization settings org-projects")}}
+{{template "org/settings/layout_head" (dict "pageClass" "organization settings org-projects org-project-settings-page")}}
 <div class="org-setting-content">
-	<h2 class="ui header">
-		{{ctx.Locale.Tr "org_project.settings.title"}}
-		<div class="sub header">{{ctx.Locale.Tr "org_project.settings.description"}}</div>
-	</h2>
-	<form class="ui form" method="post" action="{{.OrgLink}}/settings/projects">
-		{{.CsrfTokenHtml}}
-		<input type="hidden" name="pointer_version" value="{{.OrgProjectConfigPointer.Version}}">
-		<div data-org-project-config-editor data-schema="{{.OrgProjectConfigSchema}}">
-			<div class="field">
-				<label for="org-project-schema">{{ctx.Locale.Tr "org_project.settings.schema"}}</label>
-				<textarea id="org-project-schema" name="schema" rows="24" spellcheck="false">{{.OrgProjectConfigSchema}}</textarea>
+	<header class="org-project-settings-header">
+		<div class="org-project-settings-heading">
+			<h2>{{ctx.Locale.Tr "org_project.settings.title"}}</h2>
+			<p>{{ctx.Locale.Tr "org_project.settings.description"}}</p>
+			<div class="org-project-settings-draft-status">
+				<strong>{{ctx.Locale.Tr "org_project.settings.draft_version" .OrgProjectConfigDraft.Version}}</strong>
+				<span>{{ctx.Locale.Tr "org_project.settings.draft_status"}}</span>
 			</div>
 		</div>
-		<div class="flex-text-block tw-mt-4">
-			<button class="ui primary button">{{ctx.Locale.Tr "org_project.settings.save_draft"}}</button>
-			<button class="ui button" formaction="{{.OrgLink}}/settings/projects/validate">{{ctx.Locale.Tr "org_project.settings.validate"}}</button>
+		<div class="org-project-settings-actions">
+			<button class="ui button" type="submit" form="org-project-config-form" formaction="{{.OrgLink}}/settings/projects/validate">{{ctx.Locale.Tr "org_project.settings.validate"}}</button>
+			<button class="ui primary button" type="submit" form="org-project-config-form">{{ctx.Locale.Tr "org_project.settings.save_draft"}}</button>
+			<button class="ui green button" type="submit" form="org-project-publish-form" data-modal-confirm="{{ctx.Locale.Tr "org_project.settings.publish_confirm"}}">{{ctx.Locale.Tr "org_project.settings.publish"}}</button>
 		</div>
-	</form>
+	</header>
 
-	<div class="ui divider"></div>
-	<h3 class="ui header">{{ctx.Locale.Tr "org_project.settings.editor_teams"}}</h3>
-	<p>{{ctx.Locale.Tr "org_project.settings.editor_teams_description"}}</p>
-	<form method="post" action="{{.OrgLink}}/settings/projects/editor-teams">
-		{{.CsrfTokenHtml}}
-		<div data-org-project-editor-teams data-teams="{{JsonUtils.EncodeToString .OrgProjectEditorTeams}}" data-empty-text="{{ctx.Locale.Tr "org_project.settings.editor_teams_empty"}}"></div>
-		<button class="ui primary button tw-mt-4">{{ctx.Locale.Tr "save"}}</button>
-	</form>
+	<div class="org-project-settings-layout">
+		<nav class="org-project-settings-index" aria-label="{{ctx.Locale.Tr "org_project.settings.section_navigation"}}">
+			<a href="#org-project-settings-fields"><span>01</span>{{ctx.Locale.Tr "org_project.settings.editor.fields"}}</a>
+			<a href="#org-project-settings-list-view"><span>02</span>{{ctx.Locale.Tr "org_project.settings.editor.listView"}}</a>
+			<a href="#org-project-settings-filters"><span>03</span>{{ctx.Locale.Tr "org_project.settings.editor.filters"}}</a>
+			<a href="#org-project-settings-metrics"><span>04</span>{{ctx.Locale.Tr "org_project.settings.editor.metrics"}}</a>
+			<a href="#org-project-settings-editor-teams"><span>05</span>{{ctx.Locale.Tr "org_project.settings.editor_teams"}}</a>
+			<a href="#org-project-settings-release"><span>06</span>{{ctx.Locale.Tr "org_project.settings.release_history"}}</a>
+		</nav>
 
-	<div class="ui divider"></div>
-	<div class="flex-left-right tw-gap-3">
-		<div>
-			<h3 class="ui header tw-m-0">{{ctx.Locale.Tr "org_project.settings.publish"}}</h3>
-			<p class="text light-2 tw-mt-1">{{ctx.Locale.Tr "org_project.settings.publish_description"}}</p>
-		</div>
-		<form method="post" action="{{.OrgLink}}/settings/projects/publish">
-			{{.CsrfTokenHtml}}
-			<input type="hidden" name="pointer_version" value="{{.OrgProjectConfigPointer.Version}}">
-			<button class="ui green button" data-modal-confirm="{{ctx.Locale.Tr "org_project.settings.publish_confirm"}}">{{ctx.Locale.Tr "org_project.settings.publish"}}</button>
-		</form>
-	</div>
-
-	{{if .OrgProjectConfigHistory}}
-		<h3 class="ui header">{{ctx.Locale.Tr "org_project.settings.history"}}</h3>
-		<div class="ui divided list">
-			{{range .OrgProjectConfigHistory}}
-				<div class="item">
-					<div class="right floated content">
-						{{if eq .State "published"}}
-							<form method="post" action="{{$.OrgLink}}/settings/projects/rollback">
-								{{$.CsrfTokenHtml}}
-								<input type="hidden" name="pointer_version" value="{{$.OrgProjectConfigPointer.Version}}">
-								<input type="hidden" name="version" value="{{.ID}}">
-								<button class="ui tiny basic button" data-modal-confirm="{{ctx.Locale.Tr "org_project.settings.rollback_confirm" .Version}}">{{ctx.Locale.Tr "org_project.settings.rollback"}}</button>
-							</form>
-						{{end}}
-					</div>
-					<div class="content">
-						<div class="header">v{{.Version}} · {{.State}}</div>
-						<div class="description">{{DateUtils.TimeSince .CreatedUnix}}</div>
-						<details class="tw-mt-2">
-							<summary class="tw-cursor-pointer">{{ctx.Locale.Tr "org_project.settings.compare"}}</summary>
-							<pre class="tw-mt-2 tw-overflow-x-auto">{{.Payload | JsonUtils.PrettyIndent}}</pre>
-						</details>
+		<div class="org-project-settings-content">
+			<form id="org-project-config-form" class="ui form" method="post" action="{{.OrgLink}}/settings/projects">
+				{{.CsrfTokenHtml}}
+				<input type="hidden" name="pointer_version" value="{{.OrgProjectConfigPointer.Version}}">
+				<div data-org-project-config-editor data-schema="{{.OrgProjectConfigSchema}}" data-labels="{{JsonUtils.EncodeToString .OrgProjectConfigLabels}}">
+					<div class="field">
+						<label for="org-project-schema">{{ctx.Locale.Tr "org_project.settings.schema"}}</label>
+						<textarea id="org-project-schema" name="schema" rows="24" spellcheck="false">{{.OrgProjectConfigSchema}}</textarea>
 					</div>
 				</div>
+			</form>
+
+			<section id="org-project-settings-editor-teams" class="ui segment org-project-settings-panel" aria-labelledby="org-project-settings-editor-teams-title">
+				<header class="org-project-settings-panel-heading">
+					<div>
+						<h3 id="org-project-settings-editor-teams-title">{{ctx.Locale.Tr "org_project.settings.editor_teams"}}</h3>
+						<p>{{ctx.Locale.Tr "org_project.settings.editor_teams_description"}}</p>
+					</div>
+				</header>
+				<form class="org-project-settings-panel-body" method="post" action="{{.OrgLink}}/settings/projects/editor-teams">
+					{{.CsrfTokenHtml}}
+					<div data-org-project-editor-teams data-teams="{{JsonUtils.EncodeToString .OrgProjectEditorTeams}}" data-empty-text="{{ctx.Locale.Tr "org_project.settings.editor_teams_empty"}}"></div>
+					<button class="ui primary button tw-mt-4">{{ctx.Locale.Tr "save"}}</button>
+				</form>
+			</section>
+
+			<section id="org-project-settings-release" class="ui segment org-project-settings-panel" aria-labelledby="org-project-settings-release-title">
+				<header class="org-project-settings-panel-heading">
+					<div>
+						<h3 id="org-project-settings-release-title">{{ctx.Locale.Tr "org_project.settings.publish"}}</h3>
+						<p>{{ctx.Locale.Tr "org_project.settings.publish_description"}}</p>
+					</div>
+				</header>
+				<div class="org-project-settings-panel-body">
+					<div class="org-project-publish-status">
+						<span class="org-project-publish-marker" aria-hidden="true"></span>
+						<div><strong>{{ctx.Locale.Tr "org_project.settings.draft_version" .OrgProjectConfigDraft.Version}}</strong><p>{{ctx.Locale.Tr "org_project.settings.draft_status"}}</p></div>
+					</div>
+					<form id="org-project-publish-form" method="post" action="{{.OrgLink}}/settings/projects/publish">
+						{{.CsrfTokenHtml}}
+						<input type="hidden" name="pointer_version" value="{{.OrgProjectConfigPointer.Version}}">
+					</form>
+				</div>
+			</section>
+
+			{{if .OrgProjectConfigHistory}}
+				<section class="ui segment org-project-settings-panel" aria-labelledby="org-project-settings-history-title">
+					<header class="org-project-settings-panel-heading">
+						<div>
+							<h3 id="org-project-settings-history-title">{{ctx.Locale.Tr "org_project.settings.history"}}</h3>
+							<p>{{ctx.Locale.Tr "org_project.settings.history_description"}}</p>
+						</div>
+					</header>
+					<div class="org-project-settings-history">
+						{{range .OrgProjectConfigHistory}}
+							<article class="org-project-settings-history-item">
+								<div class="org-project-settings-history-marker" aria-hidden="true"></div>
+								<div class="org-project-settings-history-content">
+									<div class="org-project-settings-history-heading">
+										<div>
+											<strong>v{{.Version}}</strong>
+											<span>{{if eq .State "published"}}{{ctx.Locale.Tr "org_project.settings.state_published"}}{{else}}{{ctx.Locale.Tr "org_project.settings.state_draft"}}{{end}}</span>
+											<small>{{DateUtils.TimeSince .CreatedUnix}}</small>
+										</div>
+										{{if eq .State "published"}}
+											<form method="post" action="{{$.OrgLink}}/settings/projects/rollback">
+												{{$.CsrfTokenHtml}}
+												<input type="hidden" name="pointer_version" value="{{$.OrgProjectConfigPointer.Version}}">
+												<input type="hidden" name="version" value="{{.ID}}">
+												<button class="ui tiny basic button" data-modal-confirm="{{ctx.Locale.Tr "org_project.settings.rollback_confirm" .Version}}">{{ctx.Locale.Tr "org_project.settings.rollback"}}</button>
+											</form>
+										{{end}}
+									</div>
+									<details>
+										<summary>{{ctx.Locale.Tr "org_project.settings.compare"}}</summary>
+										<pre>{{.Payload | JsonUtils.PrettyIndent}}</pre>
+									</details>
+								</div>
+							</article>
+						{{end}}
+					</div>
+				</section>
 			{{end}}
 		</div>
-	{{end}}
+	</div>
 </div>
 {{template "org/settings/layout_footer" .}}
