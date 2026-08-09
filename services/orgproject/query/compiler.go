@@ -37,6 +37,11 @@ type ListOptions struct {
 	OwnerID         int64
 	FilterValues    map[string]config.RawValue
 	Sort            []config.Sort
+	Search          string
+	OnlyUserID      int64
+	Due             string
+	RiskFirst       bool
+	Now             timeutil.TimeStamp
 	Page            int
 	PageSize        int
 	IncludeArchived bool
@@ -73,6 +78,18 @@ func (compiler *compiler) join(queryField field) string {
 	return alias
 }
 
+func (compiler *compiler) joinAs(queryField field, alias string) string {
+	if existing, ok := compiler.aliases[queryField.key]; ok {
+		return existing
+	}
+	compiler.aliases[queryField.key] = alias
+	compiler.joins = append(compiler.joins,
+		fmt.Sprintf("LEFT JOIN org_project_field_value %s ON %s.project_id = org_project.id AND %s.field_key = ?", alias, alias, alias),
+	)
+	compiler.joinArgs = append(compiler.joinArgs, queryField.key)
+	return alias
+}
+
 // CompileList builds parameterized SQLite list and count queries.
 func CompileList(ast *AST, opts ListOptions) (CompiledList, error) {
 	if ast == nil {
@@ -87,6 +104,11 @@ func CompileList(ast *AST, opts ListOptions) (CompiledList, error) {
 	}
 
 	queryCompiler := newCompiler(ast)
+	var riskOrder []string
+	var riskOrderArgs []any
+	if opts.RiskFirst {
+		riskOrder, riskOrderArgs = queryCompiler.compileRiskFirstSort(opts.Now)
+	}
 	where := []string{"org_project.owner_id = ?"}
 	whereArgs := []any{opts.OwnerID}
 	if !opts.IncludeArchived {
@@ -99,10 +121,32 @@ func CompileList(ast *AST, opts ListOptions) (CompiledList, error) {
 	}
 	where = append(where, filterSQL...)
 	whereArgs = append(whereArgs, filterArgs...)
-
-	orderBy, err := queryCompiler.compileSort(opts.Sort)
+	searchSQL, searchArgs := compileSearch(ast, opts.Search)
+	if searchSQL != "" {
+		where = append(where, searchSQL)
+		whereArgs = append(whereArgs, searchArgs...)
+	}
+	mineSQL, mineArgs := compileOnlyMine(ast, opts.OnlyUserID)
+	if mineSQL != "" {
+		where = append(where, mineSQL)
+		whereArgs = append(whereArgs, mineArgs...)
+	}
+	dueSQL, dueArgs, err := queryCompiler.compileDue(opts.Due, opts.Now)
 	if err != nil {
 		return CompiledList{}, err
+	}
+	if dueSQL != "" {
+		where = append(where, dueSQL)
+		whereArgs = append(whereArgs, dueArgs...)
+	}
+
+	orderBy := riskOrder
+	orderArgs := riskOrderArgs
+	if len(orderBy) == 0 {
+		orderBy, err = queryCompiler.compileSort(opts.Sort)
+		if err != nil {
+			return CompiledList{}, err
+		}
 	}
 	joins := strings.Join(queryCompiler.joins, " ")
 	whereSQL := strings.Join(where, " AND ")
@@ -111,7 +155,8 @@ func CompileList(ast *AST, opts ListOptions) (CompiledList, error) {
 	dataSQL := "SELECT org_project.id, org_project.owner_id, org_project.slug, org_project.name, org_project.description, " +
 		"org_project.lifecycle, org_project.version, org_project.created_by, org_project.created_unix, org_project.updated_unix " +
 		"FROM org_project " + joins + " WHERE " + whereSQL + " ORDER BY " + strings.Join(orderBy, ", ") + " LIMIT ? OFFSET ?"
-	dataArgs := append(slices.Clone(args), pageSize, (page-1)*pageSize)
+	dataArgs := append(slices.Clone(args), orderArgs...)
+	dataArgs = append(dataArgs, pageSize, (page-1)*pageSize)
 	countSQL := "SELECT COUNT(DISTINCT org_project.id) FROM org_project " + joins + " WHERE " + whereSQL
 
 	return CompiledList{
@@ -119,6 +164,122 @@ func CompileList(ast *AST, opts ListOptions) (CompiledList, error) {
 		Count: CompiledQuery{SQL: countSQL, Args: args},
 		Page:  page, PageSize: pageSize,
 	}, nil
+}
+
+func (compiler *compiler) compileDue(scope string, now timeutil.TimeStamp) (string, []any, error) {
+	if scope == "" {
+		return "", nil, nil
+	}
+	target, ok := compiler.ast.fields["target_date"]
+	if !ok {
+		return "0 = 1", nil, nil
+	}
+	if now <= 0 {
+		now = timeutil.TimeStampNow()
+	}
+	alias := compiler.joinAs(target, "due_filter")
+	switch scope {
+	case "overdue":
+		return alias + ".value_time < ?", []any{now}, nil
+	case "week":
+		return alias + ".value_time >= ? AND " + alias + ".value_time < ?", []any{now, now.AddDuration(7 * 24 * time.Hour)}, nil
+	default:
+		return "", nil, fmt.Errorf("unsupported due scope %q", scope)
+	}
+}
+
+func compileSearch(ast *AST, search string) (string, []any) {
+	search = strings.TrimSpace(search)
+	if search == "" {
+		return "", nil
+	}
+	pattern := "%" + strings.ToLower(search) + "%"
+	clauses := []string{
+		"LOWER(org_project.name) LIKE ?",
+		"LOWER(org_project.slug) LIKE ?",
+		"LOWER(org_project.description) LIKE ?",
+	}
+	args := []any{pattern, pattern, pattern}
+	if _, ok := ast.fields["owner"]; ok {
+		clauses = append(clauses, `EXISTS (
+			SELECT 1 FROM org_project_field_value search_owner
+			INNER JOIN user search_user ON search_user.id = search_owner.value_user_id
+			WHERE search_owner.project_id = org_project.id AND search_owner.field_key = ?
+			AND (LOWER(search_user.name) LIKE ? OR LOWER(search_user.full_name) LIKE ?)
+		)`)
+		args = append(args, "owner", pattern, pattern)
+	}
+	if _, ok := ast.fields["followers"]; ok {
+		clauses = append(clauses, `EXISTS (
+			SELECT 1 FROM org_project_field_value search_followers
+			INNER JOIN json_each(search_followers.value_json) search_follower_id
+			INNER JOIN user search_follower ON search_follower.id = search_follower_id.value
+			WHERE search_followers.project_id = org_project.id AND search_followers.field_key = ?
+			AND (LOWER(search_follower.name) LIKE ? OR LOWER(search_follower.full_name) LIKE ?)
+		)`)
+		args = append(args, "followers", pattern, pattern)
+	}
+	return "(" + strings.Join(clauses, " OR ") + ")", args
+}
+
+func compileOnlyMine(ast *AST, userID int64) (string, []any) {
+	if userID <= 0 {
+		return "", nil
+	}
+	clauses := make([]string, 0, 2)
+	args := make([]any, 0, 4)
+	if _, ok := ast.fields["owner"]; ok {
+		clauses = append(clauses, `EXISTS (
+			SELECT 1 FROM org_project_field_value mine_owner
+			WHERE mine_owner.project_id = org_project.id AND mine_owner.field_key = ? AND mine_owner.value_user_id = ?
+		)`)
+		args = append(args, "owner", userID)
+	}
+	if _, ok := ast.fields["followers"]; ok {
+		clauses = append(clauses, `EXISTS (
+			SELECT 1 FROM org_project_field_value mine_followers
+			INNER JOIN json_each(mine_followers.value_json) mine_follower
+			WHERE mine_followers.project_id = org_project.id AND mine_followers.field_key = ? AND mine_follower.value = ?
+		)`)
+		args = append(args, "followers", userID)
+	}
+	if len(clauses) == 0 {
+		return "0 = 1", nil
+	}
+	return "(" + strings.Join(clauses, " OR ") + ")", args
+}
+
+func (compiler *compiler) compileRiskFirstSort(now timeutil.TimeStamp) ([]string, []any) {
+	risk, hasRisk := compiler.ast.fields["risk"]
+	target, hasTarget := compiler.ast.fields["target_date"]
+	if !hasRisk && !hasTarget {
+		return nil, nil
+	}
+	if now <= 0 {
+		now = timeutil.TimeStampNow()
+	}
+	caseParts := make([]string, 0, 3)
+	args := make([]any, 0, 3)
+	if hasRisk {
+		alias := compiler.joinAs(risk, "risk_sort")
+		caseParts = append(caseParts, "WHEN "+alias+".value_text = ? THEN 0")
+		args = append(args, "blocked")
+	}
+	if hasTarget {
+		alias := compiler.joinAs(target, "target_sort")
+		caseParts = append(caseParts, "WHEN "+alias+".value_time < ? THEN 1")
+		args = append(args, now)
+	}
+	if hasRisk {
+		caseParts = append(caseParts, "WHEN risk_sort.value_text = ? THEN 2")
+		args = append(args, "attention")
+	}
+	orderBy := []string{"CASE " + strings.Join(caseParts, " ") + " ELSE 3 END ASC"}
+	if hasTarget {
+		orderBy = append(orderBy, "target_sort.value_time IS NULL ASC", "target_sort.value_time ASC")
+	}
+	orderBy = append(orderBy, "org_project.updated_unix DESC", "org_project.id ASC")
+	return orderBy, args
 }
 
 func (compiler *compiler) compileFilters(values map[string]config.RawValue) ([]string, []any, error) {

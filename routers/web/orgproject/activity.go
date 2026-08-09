@@ -14,6 +14,7 @@ import (
 // Activity renders bounded native repository activity for one organization project.
 func Activity(ctx *context.Context) {
 	setPageData(ctx, "view")
+	ctx.Data["OrgProjectDetailActive"] = "activity"
 	detail, err := project_service.GetBySlug(ctx, ctx.Org.Organization.ID, ctx.PathParam("slug"), ctx.Doer)
 	if err != nil {
 		writeProjectError(ctx, err, tplOrgProjectActivity)

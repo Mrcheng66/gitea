@@ -5,9 +5,13 @@ package orgproject
 
 import (
 	"net/http"
+	"strconv"
+	"time"
 
 	orgproject_model "gitea.dev/models/orgproject"
+	"gitea.dev/modules/json"
 	"gitea.dev/modules/setting"
+	"gitea.dev/modules/timeutil"
 	"gitea.dev/modules/web"
 	"gitea.dev/services/context"
 	"gitea.dev/services/forms"
@@ -23,10 +27,12 @@ type projectListRow struct {
 	Fields  []fieldDisplay
 }
 
-type metricDisplay struct {
+type projectFilterDisplay struct {
 	Key     string
 	Label   string
-	Buckets []query.MetricBucket
+	Value   string
+	Field   config.Field
+	Members []memberDisplay
 }
 
 // Dashboard renders configured metrics and recent organization projects.
@@ -58,13 +64,33 @@ func renderProjectList(ctx *context.Context, dashboard bool) {
 		ctx.ServerError("GetPublishedSchema", err)
 		return
 	}
+	members, membersByID, err := loadProjectMembers(ctx)
+	if err != nil {
+		ctx.ServerError("LoadOrgProjectMembers", err)
+		return
+	}
+	filterValues, filters := projectListFilters(ctx, schema, members)
+	listSchema := schema
+	listSchema.ListView.Columns = projectLedgerColumns(schema)
+	now := timeutil.TimeStampNow().AsTime()
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	onlyUserID := int64(0)
+	if ctx.FormBool("mine") {
+		onlyUserID = ctx.Doer.ID
+	}
 
 	page := ctx.FormInt("page")
 	if page <= 0 {
 		page = 1
 	}
-	result, err := query.List(ctx, schema, query.ListOptions{
+	result, err := query.List(ctx, listSchema, query.ListOptions{
 		OwnerID:         ctx.Org.Organization.ID,
+		FilterValues:    filterValues,
+		Search:          ctx.FormString("q"),
+		OnlyUserID:      onlyUserID,
+		Due:             ctx.FormString("due"),
+		RiskFirst:       true,
+		Now:             timeutil.TimeStamp(today.Unix()),
 		Page:            page,
 		PageSize:        setting.OrgProject.DefaultPageSize,
 		IncludeArchived: ctx.FormBool("include_archived"),
@@ -74,23 +100,19 @@ func renderProjectList(ctx *context.Context, dashboard bool) {
 		return
 	}
 
-	fieldByKey := make(map[string]config.Field, len(schema.Fields))
+	fieldByKey := make(map[string]config.Field, len(listSchema.Fields))
 	for _, field := range schema.Fields {
 		fieldByKey[field.Key] = field
 	}
 	rows := make([]projectListRow, 0, len(result.Items))
 	for _, item := range result.Items {
-		fields := make([]fieldDisplay, 0, len(schema.ListView.Columns))
-		for _, key := range schema.ListView.Columns {
+		fields := make([]fieldDisplay, 0, len(listSchema.ListView.Columns))
+		for _, key := range listSchema.ListView.Columns {
 			field, ok := fieldByKey[key]
 			if !ok {
 				continue
 			}
-			value := "—"
-			if stored := item.Values[key]; stored != nil {
-				value = formatFieldValue(field, stored)
-			}
-			fields = append(fields, fieldDisplay{Key: key, Label: field.Label, Value: value})
+			fields = append(fields, buildFieldDisplay(field, item.Values[key], membersByID))
 		}
 		rows = append(rows, projectListRow{Project: item.Project, Fields: fields})
 	}
@@ -100,23 +122,99 @@ func renderProjectList(ctx *context.Context, dashboard bool) {
 	ctx.Data["OrgProjectRows"] = rows
 	ctx.Data["OrgProjectTotal"] = result.Total
 	ctx.Data["IncludeArchived"] = ctx.FormBool("include_archived")
+	ctx.Data["OrgProjectFilters"] = filters
+	ctx.Data["OrgProjectSearch"] = ctx.FormString("q")
+	ctx.Data["OrgProjectOnlyMine"] = ctx.FormBool("mine")
+	ctx.Data["OrgProjectDue"] = ctx.FormString("due")
+	ctx.Data["OrgProjectHasFilters"] = ctx.FormString("q") != "" || ctx.FormBool("mine") || ctx.FormString("due") != "" || len(filterValues) > 0 || ctx.FormBool("include_archived")
 	pager := context.NewPagination(result.Total, result.PageSize, result.Page, 5)
 	pager.AddParamFromRequest(ctx.Req)
 	ctx.Data["Page"] = pager
 
-	if dashboard {
-		metrics := make([]metricDisplay, 0, len(schema.Metrics))
-		for _, metric := range schema.Metrics {
-			result, err := query.Metric(ctx, schema, query.MetricOptions{OwnerID: ctx.Org.Organization.ID, MetricKey: metric.Key})
-			if err != nil {
-				ctx.ServerError("OrgProjectMetric", err)
-				return
-			}
-			metrics = append(metrics, metricDisplay{Key: metric.Key, Label: metric.Label, Buckets: result.Buckets})
-		}
-		ctx.Data["OrgProjectMetrics"] = metrics
+	summary, err := query.Summary(ctx, schema, ctx.Org.Organization.ID, now)
+	if err != nil {
+		ctx.ServerError("OrgProjectSummary", err)
+		return
 	}
+	ctx.Data["OrgProjectSummary"] = summary
 	ctx.HTML(http.StatusOK, templateName)
+}
+
+func projectLedgerColumns(schema config.Schema) []string {
+	active := make(map[string]struct{}, len(schema.Fields))
+	for _, field := range schema.Fields {
+		if !field.Archived {
+			active[field.Key] = struct{}{}
+		}
+	}
+	columns := make([]string, 0, len(schema.ListView.Columns)+6)
+	seen := make(map[string]struct{}, len(schema.ListView.Columns)+6)
+	for _, key := range []string{"stage", "owner", "followers", "progress", "risk", "target_date"} {
+		if _, ok := active[key]; ok {
+			columns = append(columns, key)
+			seen[key] = struct{}{}
+		}
+	}
+	for _, key := range schema.ListView.Columns {
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		if _, ok := active[key]; ok {
+			columns = append(columns, key)
+			seen[key] = struct{}{}
+		}
+	}
+	return columns
+}
+
+func projectListFilters(ctx *context.Context, schema config.Schema, members []memberDisplay) (map[string]config.RawValue, []projectFilterDisplay) {
+	fieldByKey := make(map[string]config.Field, len(schema.Fields))
+	for _, field := range schema.Fields {
+		fieldByKey[field.Key] = field
+	}
+	values := make(map[string]config.RawValue)
+	displays := make([]projectFilterDisplay, 0, len(schema.Filters))
+	for _, filter := range schema.Filters {
+		field, ok := fieldByKey[filter.FieldKey]
+		if !ok || field.Archived {
+			continue
+		}
+		value := ctx.FormString("filter_" + filter.Key)
+		display := projectFilterDisplay{Key: filter.Key, Label: filter.Label, Value: value, Field: field}
+		if field.Type == config.FieldTypeMember || field.Type == config.FieldTypeMemberArray {
+			display.Members = members
+		}
+		displays = append(displays, display)
+		if value == "" {
+			continue
+		}
+		var raw any = value
+		switch field.Type {
+		case config.FieldTypeMember, config.FieldTypeMemberArray, config.FieldTypeInteger:
+			parsed, err := strconv.ParseInt(value, 10, 64)
+			if err != nil {
+				continue
+			}
+			raw = parsed
+		case config.FieldTypeDecimal, config.FieldTypePercent:
+			parsed, err := strconv.ParseFloat(value, 64)
+			if err != nil {
+				continue
+			}
+			raw = parsed
+		case config.FieldTypeBoolean:
+			parsed, err := strconv.ParseBool(value)
+			if err != nil {
+				continue
+			}
+			raw = parsed
+		}
+		encoded, err := json.Marshal(raw)
+		if err == nil {
+			values[filter.Key] = encoded
+		}
+	}
+	return values, displays
 }
 
 // New renders the organization project creation form.
@@ -179,6 +277,7 @@ func NewPost(ctx *context.Context) {
 // View renders one organization project.
 func View(ctx *context.Context) {
 	setPageData(ctx, "view")
+	ctx.Data["OrgProjectDetailActive"] = "overview"
 	detail, err := project_service.GetBySlug(ctx, ctx.Org.Organization.ID, ctx.PathParam("slug"), ctx.Doer)
 	if err != nil {
 		writeProjectError(ctx, err, tplOrgProjectView)
@@ -200,14 +299,34 @@ func View(ctx *context.Context) {
 		return
 	}
 
-	ctx.Data["Title"] = detail.Project.Name
-	ctx.Data["OrgProject"] = detail.Project
-	ctx.Data["OrgProjectFields"] = buildFieldDisplays(schema, detail.Values)
-	ctx.Data["OrgProjectRepositories"] = repositories
-	if err := setProjectFormData(ctx, schema, values); err != nil {
+	members, membersByID, err := loadProjectMembers(ctx)
+	if err != nil {
 		ctx.ServerError("LoadOrgProjectMembers", err)
 		return
 	}
+	fields := buildFieldDisplays(schema, detail.Values, membersByID)
+	fieldByKey := make(map[string]*fieldDisplay, len(fields))
+	otherFields := make([]fieldDisplay, 0, len(fields))
+	coreFields := map[string]struct{}{
+		"stage": {}, "owner": {}, "followers": {}, "progress": {}, "risk": {}, "start_date": {}, "target_date": {}, "summary": {},
+	}
+	for index := range fields {
+		field := &fields[index]
+		fieldByKey[field.Key] = field
+		if _, ok := coreFields[field.Key]; !ok {
+			otherFields = append(otherFields, *field)
+		}
+	}
+	ctx.Data["Title"] = detail.Project.Name
+	ctx.Data["OrgProject"] = detail.Project
+	ctx.Data["OrgProjectFields"] = fields
+	ctx.Data["OrgProjectFieldByKey"] = fieldByKey
+	ctx.Data["OrgProjectOtherFields"] = otherFields
+	ctx.Data["OrgProjectRepositories"] = repositories
+	ctx.Data["OrgProjectEditing"] = ctx.FormBool("edit")
+	ctx.Data["OrgProjectSchema"] = schema
+	ctx.Data["OrgProjectValues"] = values
+	ctx.Data["OrgProjectMembers"] = members
 	ctx.HTML(http.StatusOK, tplOrgProjectView)
 }
 
@@ -268,6 +387,7 @@ func ArchivePost(ctx *context.Context) {
 // History renders the audited history for one organization project.
 func History(ctx *context.Context) {
 	setPageData(ctx, "history")
+	ctx.Data["OrgProjectDetailActive"] = "history"
 	detail, err := project_service.GetBySlug(ctx, ctx.Org.Organization.ID, ctx.PathParam("slug"), ctx.Doer)
 	if err != nil {
 		writeProjectError(ctx, err, tplOrgProjectHistory)

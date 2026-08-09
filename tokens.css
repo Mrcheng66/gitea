@@ -1,0 +1,28 @@
+:root {
+  --project-color-paper: var(--color-body);
+  --project-color-surface: var(--color-box-body);
+  --project-color-surface-muted: var(--color-box-header);
+  --project-color-ink: var(--color-text);
+  --project-color-ink-muted: var(--color-text-light-2);
+  --project-color-rule: var(--color-secondary);
+  --project-color-accent: var(--color-primary);
+  --project-color-danger: var(--color-red);
+  --project-color-warning: var(--color-yellow);
+  --project-color-success: var(--color-green);
+  --project-font-display: var(--fonts-regular);
+  --project-font-body: var(--fonts-regular);
+  --project-font-mono: var(--fonts-monospace);
+  --project-space-3xs: 0.25rem;
+  --project-space-2xs: 0.5rem;
+  --project-space-xs: 0.75rem;
+  --project-space-sm: 1rem;
+  --project-space-md: 1.5rem;
+  --project-space-lg: 2rem;
+  --project-text-xs: 0.75rem;
+  --project-text-sm: 0.875rem;
+  --project-text-lg: 1.5rem;
+  --project-radius-control: var(--border-radius-medium);
+  --project-radius-panel: 0.5rem;
+  --project-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --project-duration-short: 160ms;
+}

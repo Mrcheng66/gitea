@@ -3,20 +3,7 @@
 	{{template "orgproject/shared/header" .}}
 	<div class="ui container">
 		{{template "base/alert" .}}
-		{{if .OrgProjectConfigReady}}
-			<div data-org-project-dashboard data-metrics="{{JsonUtils.EncodeToString .OrgProjectMetrics}}"></div>
-			<div class="flex-left-right tw-mb-3">
-				<h2 class="ui header tw-m-0">{{ctx.Locale.Tr "org_project.recent"}}</h2>
-				<a href="{{.OrgProjectBaseLink}}/list">{{ctx.Locale.Tr "org_project.view_all"}} {{svg "octicon-arrow-right"}}</a>
-			</div>
-			{{if .OrgProjectRows}}<div data-org-project-list data-rows="{{JsonUtils.EncodeToString .OrgProjectRows}}" data-base-link="{{.OrgProjectBaseLink}}" data-archived-label="{{ctx.Locale.Tr "org_project.archived"}}" data-no-description="{{ctx.Locale.Tr "org_project.no_description"}}">{{template "orgproject/shared/project_table" .}}</div>{{else}}{{template "orgproject/shared/project_table" .}}{{end}}
-		{{else}}
-			<div class="ui warning message">
-				<div class="header">{{ctx.Locale.Tr "org_project.config_missing"}}</div>
-				<p>{{ctx.Locale.Tr "org_project.config_missing_description"}}</p>
-				{{if .CanConfigureOrgProjects}}<a class="ui primary button" href="{{.OrgLink}}/settings/projects">{{ctx.Locale.Tr "org_project.settings.title"}}</a>{{end}}
-			</div>
-		{{end}}
+		{{template "orgproject/shared/ledger" .}}
 	</div>
 </div>
 {{template "base/footer" .}}

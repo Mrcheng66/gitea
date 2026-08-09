@@ -1,0 +1,25 @@
+<div class="org-project-detail-heading">
+	<div class="org-project-detail-heading-main">
+		<a class="ui icon button" href="{{.OrgProjectBaseLink}}" aria-label="{{ctx.Locale.Tr "org_project.back"}}">{{svg "octicon-arrow-left"}}</a>
+		<div>
+			<h1>{{.OrgProject.Name}}</h1>
+			<p>{{.OrgProject.Slug}} · {{ctx.Locale.Tr "org_project.updated"}} {{DateUtils.TimeSince .OrgProject.UpdatedUnix}}</p>
+		</div>
+	</div>
+	{{if and (eq .OrgProjectDetailActive "overview") .CanEditOrgProjects (eq .OrgProject.Lifecycle "active")}}
+		<div class="flex-text-block">
+			{{if .OrgProjectEditing}}
+				<a class="ui button" href="{{.OrgProjectBaseLink}}/{{.OrgProject.Slug}}">{{ctx.Locale.Tr "cancel"}}</a>
+			{{else}}
+				<a class="ui primary button" href="{{.OrgProjectBaseLink}}/{{.OrgProject.Slug}}?edit=true">{{svg "octicon-pencil"}} {{ctx.Locale.Tr "org_project.edit"}}</a>
+			{{end}}
+		</div>
+	{{end}}
+</div>
+<overflow-menu class="ui secondary pointing menu org-project-detail-tabs">
+	<div class="overflow-menu-items">
+		<a class="{{if eq .OrgProjectDetailActive "overview"}}active {{end}}item" href="{{.OrgProjectBaseLink}}/{{.OrgProject.Slug}}">{{svg "octicon-project"}} {{ctx.Locale.Tr "org_project.overview"}}</a>
+		<a class="{{if eq .OrgProjectDetailActive "activity"}}active {{end}}item" href="{{.OrgProjectBaseLink}}/{{.OrgProject.Slug}}/activity">{{svg "octicon-pulse"}} {{ctx.Locale.Tr "org_project.activity.nav"}}</a>
+		<a class="{{if eq .OrgProjectDetailActive "history"}}active {{end}}item" href="{{.OrgProjectBaseLink}}/{{.OrgProject.Slug}}/history">{{svg "octicon-history"}} {{ctx.Locale.Tr "org_project.history"}}</a>
+	</div>
+</overflow-menu>

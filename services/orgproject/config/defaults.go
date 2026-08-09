@@ -38,7 +38,7 @@ func DefaultSchema() Schema {
 			{Key: "summary", Label: "项目摘要", Type: FieldTypeLongText, Order: 80, Default: rawDefault("")},
 		},
 		ListView: ListView{
-			Columns: []string{"stage", "progress", "owner", "target_date", "risk"},
+			Columns: []string{"stage", "owner", "followers", "progress", "risk", "target_date"},
 			Sort:    []Sort{{FieldKey: "risk", Direction: SortDescending}, {FieldKey: "target_date", Direction: SortAscending}},
 		},
 		Filters: []Filter{

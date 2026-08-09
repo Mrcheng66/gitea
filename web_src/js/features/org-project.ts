@@ -31,9 +31,22 @@ export async function initOrgProject() {
       baseLink: el.getAttribute('data-base-link') || '',
       archivedLabel: el.getAttribute('data-archived-label') || 'Archived',
       noDescription: el.getAttribute('data-no-description') || '',
+      projectLabel: el.getAttribute('data-project-label') || 'Project',
+      updatedLabel: el.getAttribute('data-updated-label') || 'Updated',
     })),
     mount('[data-org-project-dashboard]', () => import('../components/orgproject/ProjectDashboard.vue'), (el) => ({
-      metrics: parseJSON(el, 'data-metrics', []),
+      summary: parseJSON(el, 'data-summary', {active: 0, blocked: 0, overdue: 0, due_soon: 0, average_progress: 0}),
+      baseLink: el.getAttribute('data-base-link') || '',
+      labels: {
+        blocked: el.getAttribute('data-label-blocked') || '',
+        overdue: el.getAttribute('data-label-overdue') || '',
+        dueSoon: el.getAttribute('data-label-due-soon') || '',
+        averageProgress: el.getAttribute('data-label-average-progress') || '',
+        blockedDescription: el.getAttribute('data-description-blocked') || '',
+        overdueDescription: el.getAttribute('data-description-overdue') || '',
+        dueSoonDescription: el.getAttribute('data-description-due-soon') || '',
+        averageProgressDescription: el.getAttribute('data-description-average-progress') || '',
+      },
     })),
     mount('[data-org-project-history]', () => import('../components/orgproject/ProjectHistory.vue'), (el) => ({
       changes: parseJSON(el, 'data-changes', []),

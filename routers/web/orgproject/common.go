@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	orgproject_model "gitea.dev/models/orgproject"
@@ -32,9 +33,13 @@ const (
 )
 
 type fieldDisplay struct {
-	Key   string
-	Label string
-	Value string
+	Key     string
+	Label   string
+	Value   string
+	Type    config.FieldType
+	Raw     string
+	Number  *float64
+	Members []memberDisplay
 }
 
 type repositoryDisplay struct {
@@ -46,6 +51,30 @@ type memberDisplay struct {
 	ID       int64  `json:"id"`
 	Name     string `json:"name"`
 	FullName string `json:"full_name"`
+	Initial  string `json:"initial"`
+}
+
+func loadProjectMembers(ctx *context.Context) ([]memberDisplay, map[int64]memberDisplay, error) {
+	members, _, err := ctx.Org.Organization.GetMembers(ctx, ctx.Doer)
+	if err != nil {
+		return nil, nil, err
+	}
+	displays := make([]memberDisplay, 0, len(members))
+	byID := make(map[int64]memberDisplay, len(members))
+	for _, member := range members {
+		displayName := member.FullName
+		if displayName == "" {
+			displayName = member.Name
+		}
+		initial := "?"
+		if runes := []rune(strings.TrimSpace(displayName)); len(runes) > 0 {
+			initial = strings.ToUpper(string(runes[0]))
+		}
+		display := memberDisplay{ID: member.ID, Name: member.Name, FullName: member.FullName, Initial: initial}
+		displays = append(displays, display)
+		byID[member.ID] = display
+	}
+	return displays, byID, nil
 }
 
 func setPageData(ctx *context.Context, active string) {
@@ -56,17 +85,13 @@ func setPageData(ctx *context.Context, active string) {
 }
 
 func setProjectFormData(ctx *context.Context, schema config.Schema, values string) error {
-	members, _, err := ctx.Org.Organization.GetMembers(ctx, ctx.Doer)
+	members, _, err := loadProjectMembers(ctx)
 	if err != nil {
 		return err
 	}
-	displays := make([]memberDisplay, 0, len(members))
-	for _, member := range members {
-		displays = append(displays, memberDisplay{ID: member.ID, Name: member.Name, FullName: member.FullName})
-	}
 	ctx.Data["OrgProjectSchema"] = schema
 	ctx.Data["OrgProjectValues"] = values
-	ctx.Data["OrgProjectMembers"] = displays
+	ctx.Data["OrgProjectMembers"] = members
 	return nil
 }
 
@@ -141,23 +166,58 @@ func fieldValueToRaw(fieldType config.FieldType, value *orgproject_model.FieldVa
 	return json.Marshal(raw)
 }
 
-func buildFieldDisplays(schema config.Schema, values []*orgproject_model.FieldValue) []fieldDisplay {
-	fields := make(map[string]config.Field, len(schema.Fields))
-	for _, field := range schema.Fields {
-		fields[field.Key] = field
-	}
-	displays := make([]fieldDisplay, 0, len(values))
+func buildFieldDisplays(schema config.Schema, values []*orgproject_model.FieldValue, members map[int64]memberDisplay) []fieldDisplay {
+	valuesByKey := make(map[string]*orgproject_model.FieldValue, len(values))
 	for _, value := range values {
-		field, ok := fields[value.FieldKey]
-		if !ok || field.Archived {
+		valuesByKey[value.FieldKey] = value
+	}
+	displays := make([]fieldDisplay, 0, len(schema.Fields))
+	for _, field := range schema.Fields {
+		if field.Archived {
 			continue
 		}
-		displays = append(displays, fieldDisplay{Key: field.Key, Label: field.Label, Value: formatFieldValue(field, value)})
+		displays = append(displays, buildFieldDisplay(field, valuesByKey[field.Key], members))
 	}
 	return displays
 }
 
-func formatFieldValue(field config.Field, value *orgproject_model.FieldValue) string {
+func buildFieldDisplay(field config.Field, value *orgproject_model.FieldValue, members map[int64]memberDisplay) fieldDisplay {
+	display := fieldDisplay{Key: field.Key, Label: field.Label, Type: field.Type, Value: formatFieldValue(field, value, members)}
+	if value == nil {
+		return display
+	}
+	if value.ValueText != nil {
+		display.Raw = *value.ValueText
+	}
+	if value.ValueNumber != nil {
+		display.Number = value.ValueNumber
+	}
+	switch field.Type {
+	case config.FieldTypeMember:
+		if value.ValueUserID != nil {
+			if member, ok := members[*value.ValueUserID]; ok {
+				display.Members = []memberDisplay{member}
+			}
+		}
+	case config.FieldTypeMemberArray:
+		if value.ValueJSON != nil {
+			var memberIDs []int64
+			if json.Unmarshal([]byte(*value.ValueJSON), &memberIDs) == nil {
+				for _, memberID := range memberIDs {
+					if member, ok := members[memberID]; ok {
+						display.Members = append(display.Members, member)
+					}
+				}
+			}
+		}
+	}
+	return display
+}
+
+func formatFieldValue(field config.Field, value *orgproject_model.FieldValue, members map[int64]memberDisplay) string {
+	if value == nil {
+		return "—"
+	}
 	switch field.Type {
 	case config.FieldTypeShortText, config.FieldTypeLongText:
 		if value.ValueText != nil {
@@ -198,9 +258,36 @@ func formatFieldValue(field config.Field, value *orgproject_model.FieldValue) st
 		}
 	case config.FieldTypeMember:
 		if value.ValueUserID != nil {
+			if member, ok := members[*value.ValueUserID]; ok {
+				if member.FullName != "" {
+					return member.FullName
+				}
+				return member.Name
+			}
 			return fmt.Sprintf("@%d", *value.ValueUserID)
 		}
-	case config.FieldTypeMulti, config.FieldTypeMemberArray:
+	case config.FieldTypeMemberArray:
+		if value.ValueJSON != nil {
+			var memberIDs []int64
+			if json.Unmarshal([]byte(*value.ValueJSON), &memberIDs) == nil {
+				names := make([]string, 0, len(memberIDs))
+				for _, memberID := range memberIDs {
+					member, ok := members[memberID]
+					if !ok {
+						continue
+					}
+					if member.FullName != "" {
+						names = append(names, member.FullName)
+					} else {
+						names = append(names, member.Name)
+					}
+				}
+				if len(names) > 0 {
+					return strings.Join(names, "、")
+				}
+			}
+		}
+	case config.FieldTypeMulti:
 		if value.ValueJSON != nil {
 			return *value.ValueJSON
 		}

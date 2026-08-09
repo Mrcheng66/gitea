@@ -1,0 +1,89 @@
+{{if .OrgProjectConfigReady}}
+	<div class="org-project-page-heading">
+		<div>
+			<h1 class="org-project-page-title">{{ctx.Locale.Tr "org_project.ledger"}}</h1>
+			<p class="org-project-page-description">{{ctx.Locale.Tr "org_project.ledger_description"}}</p>
+		</div>
+		{{if .CanEditOrgProjects}}
+			<a class="ui primary button" href="{{.OrgProjectBaseLink}}/new">{{svg "octicon-plus"}} {{ctx.Locale.Tr "org_project.new"}}</a>
+		{{end}}
+	</div>
+
+	<div
+		data-org-project-dashboard
+		data-summary="{{JsonUtils.EncodeToString .OrgProjectSummary}}"
+		data-base-link="{{.OrgProjectBaseLink}}"
+		data-label-blocked="{{ctx.Locale.Tr "org_project.summary.blocked"}}"
+		data-label-overdue="{{ctx.Locale.Tr "org_project.summary.overdue"}}"
+		data-label-due-soon="{{ctx.Locale.Tr "org_project.summary.due_soon"}}"
+		data-label-average-progress="{{ctx.Locale.Tr "org_project.summary.average_progress"}}"
+		data-description-blocked="{{ctx.Locale.Tr "org_project.summary.blocked_description"}}"
+		data-description-overdue="{{ctx.Locale.Tr "org_project.summary.overdue_description"}}"
+		data-description-due-soon="{{ctx.Locale.Tr "org_project.summary.due_soon_description"}}"
+		data-description-average-progress="{{ctx.Locale.Tr "org_project.summary.average_progress_description" .OrgProjectSummary.Active}}"
+	></div>
+
+	<form class="ui form org-project-toolbar" method="get">
+		<div class="org-project-toolbar-search">
+			<label class="sr-only" for="org-project-search">{{ctx.Locale.Tr "org_project.search"}}</label>
+			<div class="ui fluid icon input">
+				<input id="org-project-search" name="q" value="{{.OrgProjectSearch}}" placeholder="{{ctx.Locale.Tr "org_project.search_placeholder"}}">
+				{{svg "octicon-search"}}
+			</div>
+		</div>
+		{{range .OrgProjectFilters}}
+			{{$filter := .}}
+			<label class="sr-only" for="org-project-filter-{{.Key}}">{{.Label}}</label>
+			{{if eq .Field.Type "single_select"}}
+				<select id="org-project-filter-{{.Key}}" name="filter_{{.Key}}" aria-label="{{.Label}}">
+					<option value="">{{.Label}}</option>
+					{{range .Field.Options}}<option value="{{.Key}}" {{if eq $filter.Value .Key}}selected{{end}}>{{.Label}}</option>{{end}}
+				</select>
+			{{else if or (eq .Field.Type "member") (eq .Field.Type "member_array")}}
+				<select id="org-project-filter-{{.Key}}" name="filter_{{.Key}}" aria-label="{{.Label}}">
+					<option value="">{{.Label}}</option>
+					{{range .Members}}<option value="{{.ID}}" {{if eq $filter.Value (printf "%d" .ID)}}selected{{end}}>{{if .FullName}}{{.FullName}}{{else}}{{.Name}}{{end}}</option>{{end}}
+				</select>
+			{{else}}
+				<input id="org-project-filter-{{.Key}}" name="filter_{{.Key}}" value="{{.Value}}" placeholder="{{.Label}}" aria-label="{{.Label}}">
+			{{end}}
+		{{end}}
+		<label class="sr-only" for="org-project-due">{{ctx.Locale.Tr "org_project.due_filter"}}</label>
+		<select id="org-project-due" name="due" aria-label="{{ctx.Locale.Tr "org_project.due_filter"}}">
+			<option value="">{{ctx.Locale.Tr "org_project.due_filter"}}</option>
+			<option value="overdue" {{if eq .OrgProjectDue "overdue"}}selected{{end}}>{{ctx.Locale.Tr "org_project.due_overdue"}}</option>
+			<option value="week" {{if eq .OrgProjectDue "week"}}selected{{end}}>{{ctx.Locale.Tr "org_project.due_week"}}</option>
+		</select>
+		<label class="org-project-toolbar-check"><input type="checkbox" name="mine" value="true" {{if .OrgProjectOnlyMine}}checked{{end}}> {{ctx.Locale.Tr "org_project.only_mine"}}</label>
+		<label class="org-project-toolbar-check"><input type="checkbox" name="include_archived" value="true" {{if .IncludeArchived}}checked{{end}}> {{ctx.Locale.Tr "org_project.include_archived"}}</label>
+		<button class="ui button" type="submit">{{ctx.Locale.Tr "org_project.apply_filters"}}</button>
+		{{if .OrgProjectHasFilters}}<a class="org-project-clear-filters" href="{{.OrgProjectBaseLink}}">{{ctx.Locale.Tr "org_project.clear_filters"}}</a>{{end}}
+	</form>
+
+	{{if .OrgProjectRows}}
+		<div
+			data-org-project-list
+			data-rows="{{JsonUtils.EncodeToString .OrgProjectRows}}"
+			data-base-link="{{.OrgProjectBaseLink}}"
+			data-archived-label="{{ctx.Locale.Tr "org_project.archived"}}"
+			data-no-description="{{ctx.Locale.Tr "org_project.no_description"}}"
+			data-project-label="{{ctx.Locale.Tr "org_project.project_info"}}"
+			data-status-label="{{ctx.Locale.Tr "org_project.status"}}"
+			data-updated-label="{{ctx.Locale.Tr "org_project.updated"}}"
+		>{{template "orgproject/shared/project_table" .}}</div>
+		{{template "base/paginate" .}}
+	{{else if .OrgProjectHasFilters}}
+		<div class="ui placeholder segment org-project-empty-state">
+			<div class="ui icon header">{{svg "octicon-filter" 32}}{{ctx.Locale.Tr "org_project.empty_filtered"}}</div>
+			<a class="ui button" href="{{.OrgProjectBaseLink}}">{{ctx.Locale.Tr "org_project.clear_filters"}}</a>
+		</div>
+	{{else}}
+		{{template "orgproject/shared/project_table" .}}
+	{{end}}
+{{else}}
+	<div class="ui warning message">
+		<div class="header">{{ctx.Locale.Tr "org_project.config_missing"}}</div>
+		<p>{{ctx.Locale.Tr "org_project.config_missing_description"}}</p>
+		{{if .CanConfigureOrgProjects}}<a class="ui primary button" href="{{.OrgLink}}/settings/projects">{{ctx.Locale.Tr "org_project.settings.title"}}</a>{{end}}
+	</div>
+{{end}}

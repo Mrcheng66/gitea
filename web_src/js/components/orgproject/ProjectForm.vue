@@ -20,7 +20,7 @@ function inputID(key: string) {
 
 <template>
   <div class="org-project-form-fields">
-    <div v-for="field in fields" :key="field.key" class="field" :class="{required: field.required}">
+    <div v-for="field in fields" :key="field.key" class="field" :class="{required: field.required, 'org-project-form-wide': field.type === 'long_text' || field.type === 'multi_select' || field.type === 'member_array'}">
       <label :for="inputID(field.key)">{{ field.label }}</label>
       <textarea v-if="field.type === 'long_text'" :id="inputID(field.key)" v-model="values[field.key]" rows="4" :required="field.required"/>
       <select v-else-if="field.type === 'single_select'" :id="inputID(field.key)" v-model="values[field.key]" :required="field.required">

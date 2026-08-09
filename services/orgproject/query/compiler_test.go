@@ -5,8 +5,10 @@ package query
 
 import (
 	"testing"
+	"time"
 
 	"gitea.dev/modules/json"
+	"gitea.dev/modules/timeutil"
 	"gitea.dev/services/orgproject/config"
 
 	"github.com/stretchr/testify/assert"
@@ -65,6 +67,60 @@ func TestCompileListUsesJSONEachForArrayMembership(t *testing.T) {
 	assert.Contains(t, compiled.Data.Args, int64(42))
 }
 
+func TestCompileListSearchesProjectsAndMembers(t *testing.T) {
+	ast, err := Parse(projectLedgerTestSchema())
+	require.NoError(t, err)
+
+	compiled, err := CompileList(ast, ListOptions{OwnerID: 3, Search: "张晨", OnlyUserID: 42})
+	require.NoError(t, err)
+
+	assert.Contains(t, compiled.Data.SQL, "LOWER(org_project.name) LIKE ?")
+	assert.Contains(t, compiled.Data.SQL, "LOWER(search_user.name) LIKE ?")
+	assert.Contains(t, compiled.Data.SQL, "json_each(search_followers.value_json)")
+	assert.Contains(t, compiled.Data.SQL, "mine_owner.value_user_id = ?")
+	assert.Contains(t, compiled.Data.SQL, "json_each(mine_followers.value_json)")
+	assert.NotContains(t, compiled.Data.SQL, "张晨")
+	assert.Contains(t, compiled.Data.Args, "%张晨%")
+	assert.Contains(t, compiled.Data.Args, int64(42))
+	assert.Equal(t, compiled.Data.Args[:len(compiled.Data.Args)-2], compiled.Count.Args)
+}
+
+func TestCompileListUsesRiskFirstOrdering(t *testing.T) {
+	ast, err := Parse(projectLedgerTestSchema())
+	require.NoError(t, err)
+
+	now := timeutil.TimeStamp(1786204800)
+	compiled, err := CompileList(ast, ListOptions{OwnerID: 3, RiskFirst: true, Now: now})
+	require.NoError(t, err)
+
+	assert.Contains(t, compiled.Data.SQL, "WHEN risk_sort.value_text = ? THEN 0")
+	assert.Contains(t, compiled.Data.SQL, "WHEN target_sort.value_time < ? THEN 1")
+	assert.Contains(t, compiled.Data.SQL, "WHEN risk_sort.value_text = ? THEN 2")
+	assert.Contains(t, compiled.Data.SQL, "target_sort.value_time ASC")
+	assert.Contains(t, compiled.Data.Args, "blocked")
+	assert.Contains(t, compiled.Data.Args, now)
+	assert.Contains(t, compiled.Data.Args, "attention")
+}
+
+func TestCompileListFiltersTargetDateScopes(t *testing.T) {
+	ast, err := Parse(projectLedgerTestSchema())
+	require.NoError(t, err)
+	now := timeutil.TimeStamp(1786204800)
+
+	overdue, err := CompileList(ast, ListOptions{OwnerID: 3, Due: "overdue", Now: now})
+	require.NoError(t, err)
+	assert.Contains(t, overdue.Data.SQL, "due_filter.value_time < ?")
+	assert.Contains(t, overdue.Data.Args, now)
+
+	week, err := CompileList(ast, ListOptions{OwnerID: 3, Due: "week", Now: now})
+	require.NoError(t, err)
+	assert.Contains(t, week.Data.SQL, "due_filter.value_time >= ? AND due_filter.value_time < ?")
+	assert.Contains(t, week.Data.Args, now.AddDuration(7*24*time.Hour))
+
+	_, err = CompileList(ast, ListOptions{OwnerID: 3, Due: "invalid", Now: now})
+	assert.ErrorContains(t, err, "unsupported due scope")
+}
+
 func TestParseRejectsUnknownQueryConfiguration(t *testing.T) {
 	schema := queryTestSchema()
 	schema.Filters[0].Operator = config.FilterOperator("raw_sql")
@@ -97,6 +153,19 @@ func queryTestSchema() config.Schema {
 			{Key: "average_progress", Label: "Average progress", Aggregation: config.MetricAverage, FieldKey: "progress"},
 		},
 	}
+}
+
+func projectLedgerTestSchema() config.Schema {
+	schema := queryTestSchema()
+	schema.Fields = append(schema.Fields,
+		config.Field{Key: "owner", Label: "Owner", Type: config.FieldTypeMember},
+		config.Field{Key: "followers", Label: "Followers", Type: config.FieldTypeMemberArray},
+		config.Field{Key: "target_date", Label: "Target date", Type: config.FieldTypeDate},
+		config.Field{Key: "risk", Label: "Risk", Type: config.FieldTypeSingle, Options: []config.Option{
+			{Key: "normal", Label: "Normal"}, {Key: "attention", Label: "Attention"}, {Key: "blocked", Label: "Blocked"},
+		}},
+	)
+	return schema
 }
 
 func rawQueryValue(t *testing.T, value any) config.RawValue {

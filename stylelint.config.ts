@@ -5,6 +5,7 @@ const cssVarFiles = [
   fileURLToPath(new URL('web_src/css/base.css', import.meta.url)),
   fileURLToPath(new URL('web_src/css/themes/theme-gitea-light.css', import.meta.url)),
   fileURLToPath(new URL('web_src/css/themes/theme-gitea-dark.css', import.meta.url)),
+  fileURLToPath(new URL('tokens.css', import.meta.url)),
 ];
 
 export default {

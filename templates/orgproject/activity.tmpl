@@ -3,13 +3,8 @@
 	{{template "orgproject/shared/header" .}}
 	<div class="ui container">
 		{{template "base/alert" .}}
-		<div class="flex-left-right tw-gap-4 tw-mb-4">
-			<div>
-				<h2 class="ui header tw-m-0">{{ctx.Locale.Tr "org_project.activity.title" .OrgProject.Name}}</h2>
-				<div class="text light-2 tw-mt-1">{{ctx.Locale.Tr "org_project.activity.description"}}</div>
-			</div>
-			<a class="ui button" href="{{.OrgProjectBaseLink}}/{{.OrgProject.Slug}}">{{svg "octicon-arrow-left"}} {{ctx.Locale.Tr "org_project.back"}}</a>
-		</div>
+		{{template "orgproject/shared/detail_header" .}}
+		<p class="text light-2 tw-mb-4">{{ctx.Locale.Tr "org_project.activity.description"}}</p>
 		<div
 			data-org-project-activity
 			data-summary="{{JsonUtils.EncodeToString .OrgProjectActivity}}"

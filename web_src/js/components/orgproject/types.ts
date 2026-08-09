@@ -62,6 +62,10 @@ export type OrgProjectDisplayField = {
   Key: string,
   Label: string,
   Value: string,
+  Type: OrgProjectFieldType,
+  Raw: string,
+  Number?: number,
+  Members?: OrgProjectMember[],
 };
 
 export type OrgProjectListRow = {
@@ -80,6 +84,14 @@ export type OrgProjectMetricDisplay = {
   Key: string,
   Label: string,
   Buckets: Array<{Bucket?: string | number | boolean, Value: number}>,
+};
+
+export type OrgProjectSummary = {
+  active: number,
+  blocked: number,
+  overdue: number,
+  due_soon: number,
+  average_progress: number,
 };
 
 export type OrgProjectTeam = {

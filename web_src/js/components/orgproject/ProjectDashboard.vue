@@ -1,23 +1,41 @@
 <script setup lang="ts">
-import type {OrgProjectMetricDisplay} from './types.ts';
+import type {OrgProjectSummary} from './types.ts';
 
-defineProps<{metrics: OrgProjectMetricDisplay[]}>();
+const props = defineProps<{
+  summary: OrgProjectSummary,
+  baseLink: string,
+  labels: {
+    blocked: string,
+    overdue: string,
+    dueSoon: string,
+    averageProgress: string,
+    blockedDescription: string,
+    overdueDescription: string,
+    dueSoonDescription: string,
+    averageProgressDescription: string,
+  },
+}>();
 
-function displayValue(value: number) {
-  return Number.isInteger(value) ? String(value) : value.toLocaleString(undefined, {maximumFractionDigits: 2});
-}
+const cards = [
+  {key: 'blocked', value: () => props.summary.blocked, label: props.labels.blocked, description: props.labels.blockedDescription, href: `${props.baseLink}?filter_risk=blocked`, tone: 'danger'},
+  {key: 'overdue', value: () => props.summary.overdue, label: props.labels.overdue, description: props.labels.overdueDescription, href: `${props.baseLink}?due=overdue`, tone: 'danger'},
+  {key: 'due-soon', value: () => props.summary.due_soon, label: props.labels.dueSoon, description: props.labels.dueSoonDescription, href: `${props.baseLink}?due=week`, tone: 'warning'},
+  {key: 'average-progress', value: () => `${Math.round(props.summary.average_progress)}%`, label: props.labels.averageProgress, description: props.labels.averageProgressDescription, tone: 'neutral'},
+];
 </script>
 
 <template>
-  <div v-if="metrics.length" class="org-project-metric-grid tw-mb-4">
-    <section v-for="metric in metrics" :key="metric.Key" class="ui segment org-project-metric-card">
-      <h3 class="ui small header">{{ metric.Label }}</h3>
-      <div class="org-project-metric-values">
-        <div v-for="(bucket, index) in metric.Buckets" :key="`${metric.Key}-${index}`" class="org-project-metric-value">
-          <span v-if="bucket.Bucket !== undefined" class="text light-2">{{ bucket.Bucket }}</span>
-          <strong>{{ displayValue(bucket.Value) }}</strong>
-        </div>
-      </div>
-    </section>
+  <div class="org-project-summary-grid">
+    <component
+      :is="card.href ? 'a' : 'section'"
+      v-for="card in cards"
+      :key="card.key"
+      class="org-project-summary-card"
+      :class="`is-${card.tone}`"
+      :href="card.href"
+    >
+      <strong>{{ card.value() }}</strong>
+      <span><b>{{ card.label }}</b><small>{{ card.description }}</small></span>
+    </component>
   </div>
 </template>

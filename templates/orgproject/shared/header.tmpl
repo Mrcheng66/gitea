@@ -2,11 +2,8 @@
 <div class="ui container">
 	<overflow-menu class="ui secondary pointing tabular borderless menu tw-mb-4">
 		<div class="overflow-menu-items">
-			<a class="{{if eq .OrgProjectActive "dashboard"}}active {{end}}item" href="{{.OrgProjectBaseLink}}">
-				{{svg "octicon-pulse"}} {{ctx.Locale.Tr "org_project.dashboard"}}
-			</a>
-			<a class="{{if eq .OrgProjectActive "list"}}active {{end}}item" href="{{.OrgProjectBaseLink}}/list">
-				{{svg "octicon-table"}} {{ctx.Locale.Tr "org_project.list"}}
+			<a class="{{if or (eq .OrgProjectActive "dashboard") (eq .OrgProjectActive "list")}}active {{end}}item" href="{{.OrgProjectBaseLink}}">
+				{{svg "octicon-table"}} {{ctx.Locale.Tr "org_project.ledger"}}
 			</a>
 			{{if .CanEditOrgProjects}}
 				<a class="{{if eq .OrgProjectActive "new"}}active {{end}}item" href="{{.OrgProjectBaseLink}}/new">

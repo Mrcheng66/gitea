@@ -3,44 +3,68 @@
 	{{template "orgproject/shared/header" .}}
 	<div class="ui container">
 		{{template "base/alert" .}}
-		<div class="flex-left-right tw-gap-4 tw-mb-4">
-			<div>
-				<h1 class="ui header tw-m-0">{{.OrgProject.Name}}</h1>
-				<div class="text light-2 tw-mt-1">{{.OrgProject.Slug}}</div>
-			</div>
-			<div class="flex-text-block">
-				<a class="ui button" href="{{.OrgProjectBaseLink}}/{{.OrgProject.Slug}}/activity">{{svg "octicon-pulse"}} {{ctx.Locale.Tr "org_project.activity.nav"}}</a>
-				<a class="ui button" href="{{.OrgProjectBaseLink}}/{{.OrgProject.Slug}}/history">{{svg "octicon-history"}} {{ctx.Locale.Tr "org_project.history"}}</a>
-			</div>
-		</div>
-		{{if .OrgProject.Description}}<div class="ui segment">{{.OrgProject.Description}}</div>{{end}}
-		{{if .OrgProjectFields}}
-			<div class="ui segment">
-				<h3 class="ui header">{{ctx.Locale.Tr "org_project.fields"}}</h3>
-				<div class="ui relaxed divided list">{{range .OrgProjectFields}}<div class="item"><div class="content"><div class="header">{{.Label}}</div><div class="description">{{.Value}}</div></div></div>{{end}}</div>
+		{{template "orgproject/shared/detail_header" .}}
+		{{if and .OrgProjectEditing .CanEditOrgProjects (eq .OrgProject.Lifecycle "active")}}
+			<section class="ui segment org-project-edit-panel">
+				<div class="org-project-panel-heading">
+					<div>
+						<h2>{{ctx.Locale.Tr "org_project.edit"}}</h2>
+						<p>{{ctx.Locale.Tr "org_project.edit_description"}}</p>
+					</div>
+				</div>
+				<form class="ui form" method="post" action="{{.OrgProjectBaseLink}}/{{.OrgProject.Slug}}">
+					{{.CsrfTokenHtml}}
+					<input type="hidden" name="version" value="{{.OrgProject.Version}}">
+					<div class="org-project-form-core">
+						<div class="required field"><label for="name">{{ctx.Locale.Tr "org_project.name"}}</label><input id="name" name="name" value="{{.OrgProject.Name}}" required></div>
+						<div class="required field"><label for="slug">{{ctx.Locale.Tr "org_project.slug"}}</label><input id="slug" name="slug" value="{{.OrgProject.Slug}}" required></div>
+						<div class="field org-project-form-wide"><label for="description">{{ctx.Locale.Tr "org_project.description"}}</label><textarea id="description" name="description" rows="4">{{.OrgProject.Description}}</textarea></div>
+					</div>
+					<div data-org-project-form data-schema="{{JsonUtils.EncodeToString .OrgProjectSchema}}" data-values="{{.OrgProjectValues}}" data-members="{{JsonUtils.EncodeToString .OrgProjectMembers}}"></div>
+					<div class="org-project-form-actions"><button class="ui primary button">{{ctx.Locale.Tr "save"}}</button><a class="ui button" href="{{.OrgProjectBaseLink}}/{{.OrgProject.Slug}}">{{ctx.Locale.Tr "cancel"}}</a></div>
+				</form>
+			</section>
+		{{else}}
+			<div class="org-project-detail-grid">
+				<div class="org-project-detail-main">
+					<section class="ui segment org-project-overview-panel">
+						<div class="org-project-panel-heading"><h2>{{ctx.Locale.Tr "org_project.project_info"}}</h2></div>
+						{{if .OrgProject.Description}}<p class="org-project-overview-description">{{.OrgProject.Description}}</p>{{else}}<p class="text light-2">{{ctx.Locale.Tr "org_project.no_description"}}</p>{{end}}
+						<div class="org-project-overview-fields">
+							{{with index .OrgProjectFieldByKey "stage"}}<div><small>{{.Label}}</small><span class="org-project-status is-stage-{{.Raw}}">{{.Value}}</span></div>{{end}}
+							{{with index .OrgProjectFieldByKey "risk"}}<div><small>{{.Label}}</small><span class="org-project-status is-risk-{{.Raw}}">{{.Value}}</span></div>{{end}}
+							{{with index .OrgProjectFieldByKey "start_date"}}<div><small>{{.Label}}</small><b>{{.Value}}</b></div>{{end}}
+							{{with index .OrgProjectFieldByKey "summary"}}<div><small>{{.Label}}</small><b>{{.Value}}</b></div>{{end}}
+						</div>
+						{{with index .OrgProjectFieldByKey "progress"}}<div class="org-project-detail-progress"><span><small>{{.Label}}</small><b>{{.Value}}</b></span><div><i style="width: {{.Number}}%"></i></div></div>{{end}}
+					</section>
+
+					<section class="ui segment org-project-repository-panel">
+						<div class="org-project-panel-heading"><h2>{{ctx.Locale.Tr "org_project.repositories"}}</h2></div>
+						{{if .OrgProjectRepositories}}
+							<div class="org-project-repository-list">{{range .OrgProjectRepositories}}<div class="org-project-repository-row"><span class="org-project-repository-icon">{{svg "octicon-repo"}}</span><div><a href="{{.Repository.Link}}">{{.Repository.FullName}}</a><small>{{if eq .Link.Role "primary"}}{{ctx.Locale.Tr "org_project.repository.primary"}}{{else}}{{ctx.Locale.Tr "org_project.repository.related"}}{{end}}</small></div>{{if $.CanEditOrgProjects}}<form method="post" action="{{$.OrgProjectBaseLink}}/{{$.OrgProject.Slug}}/repositories/{{.Repository.ID}}/delete">{{$.CsrfTokenHtml}}<input type="hidden" name="version" value="{{$.OrgProject.Version}}"><button class="ui tiny basic button" aria-label="{{ctx.Locale.Tr "remove"}}">{{svg "octicon-x"}}</button></form>{{end}}</div>{{end}}</div>
+						{{else}}<p class="text light-2">{{ctx.Locale.Tr "org_project.repositories_empty"}}</p>{{end}}
+						{{if and .CanEditOrgProjects (eq .OrgProject.Lifecycle "active")}}
+							<details class="org-project-repository-linker"><summary>{{svg "octicon-plus"}} {{ctx.Locale.Tr "org_project.repository.link"}}</summary><form class="ui form" method="post" action="{{.OrgProjectBaseLink}}/{{.OrgProject.Slug}}/repositories">{{.CsrfTokenHtml}}<input type="hidden" name="version" value="{{.OrgProject.Version}}"><div class="fields"><div class="eight wide required field"><label for="repository-id">{{ctx.Locale.Tr "org_project.repository.id"}}</label><input id="repository-id" name="repository_id" type="number" min="1" required></div><div class="four wide field"><label for="repository-role">{{ctx.Locale.Tr "org_project.repository.role"}}</label><select id="repository-role" name="role"><option value="related">{{ctx.Locale.Tr "org_project.repository.related"}}</option><option value="primary">{{ctx.Locale.Tr "org_project.repository.primary"}}</option></select></div><div class="four wide field"><label>&nbsp;</label><button class="ui button">{{ctx.Locale.Tr "org_project.repository.link"}}</button></div></div></form></details>
+						{{end}}
+					</section>
+
+					{{if .OrgProjectOtherFields}}<section class="ui segment"><div class="org-project-panel-heading"><h2>{{ctx.Locale.Tr "org_project.other_fields"}}</h2></div><div class="org-project-other-fields">{{range .OrgProjectOtherFields}}<div><small>{{.Label}}</small><b>{{.Value}}</b></div>{{end}}</div></section>{{end}}
+				</div>
+
+				<aside class="org-project-detail-sidebar">
+					<section class="ui segment">
+						<div class="org-project-panel-heading"><h2>{{ctx.Locale.Tr "org_project.responsibility"}}</h2></div>
+						{{with index .OrgProjectFieldByKey "owner"}}<div class="org-project-detail-owner"><small>{{.Label}}</small>{{if .Members}}{{range .Members}}<span><i class="org-project-avatar">{{.Initial}}</i><b>{{if .FullName}}{{.FullName}}{{else}}{{.Name}}{{end}}</b></span>{{end}}{{else}}<b>—</b>{{end}}</div>{{end}}
+						{{with index .OrgProjectFieldByKey "followers"}}<div class="org-project-detail-followers"><small>{{.Label}}</small>{{if .Members}}<div class="org-project-followers">{{range .Members}}<i class="org-project-avatar" title="{{if .FullName}}{{.FullName}}{{else}}{{.Name}}{{end}}">{{.Initial}}</i>{{end}}</div>{{else}}<b>—</b>{{end}}</div>{{end}}
+					</section>
+					<section class="ui segment"><div class="org-project-panel-heading"><h2>{{ctx.Locale.Tr "org_project.key_dates"}}</h2></div><div class="org-project-date-list">{{with index .OrgProjectFieldByKey "start_date"}}<div><span>{{.Label}}</span><b>{{.Value}}</b></div>{{end}}{{with index .OrgProjectFieldByKey "target_date"}}<div><span>{{.Label}}</span><b>{{.Value}}</b></div>{{end}}<div><span>{{ctx.Locale.Tr "org_project.updated"}}</span><b>{{DateUtils.TimeSince .OrgProject.UpdatedUnix}}</b></div></div></section>
+				</aside>
 			</div>
 		{{end}}
-		<div class="ui segment">
-			<div class="flex-left-right"><h3 class="ui header tw-m-0">{{ctx.Locale.Tr "org_project.repositories"}}</h3></div>
-			{{if .OrgProjectRepositories}}
-				<div class="ui divided list tw-mt-3">{{range .OrgProjectRepositories}}<div class="item"><div class="right floated content">{{if $.CanEditOrgProjects}}<form method="post" action="{{$.OrgProjectBaseLink}}/{{$.OrgProject.Slug}}/repositories/{{.Repository.ID}}/delete">{{$.CsrfTokenHtml}}<input type="hidden" name="version" value="{{$.OrgProject.Version}}"><button class="ui tiny basic red button">{{ctx.Locale.Tr "remove"}}</button></form>{{end}}</div>{{svg "octicon-repo"}} <a href="{{.Repository.Link}}">{{.Repository.FullName}}</a> <span class="ui basic label">{{.Link.Role}}</span></div>{{end}}</div>
-			{{else}}<p class="text light-2">{{ctx.Locale.Tr "org_project.repositories_empty"}}</p>{{end}}
-			{{if and .CanEditOrgProjects (eq .OrgProject.Lifecycle "active")}}
-				<form class="ui form tw-mt-4" method="post" action="{{.OrgProjectBaseLink}}/{{.OrgProject.Slug}}/repositories">
-					{{.CsrfTokenHtml}}<input type="hidden" name="version" value="{{.OrgProject.Version}}">
-					<div class="fields"><div class="eight wide required field"><label for="repository-id">{{ctx.Locale.Tr "org_project.repository.id"}}</label><input id="repository-id" name="repository_id" type="number" min="1" required></div><div class="four wide field"><label for="repository-role">{{ctx.Locale.Tr "org_project.repository.role"}}</label><select id="repository-role" name="role"><option value="related">{{ctx.Locale.Tr "org_project.repository.related"}}</option><option value="primary">{{ctx.Locale.Tr "org_project.repository.primary"}}</option></select></div><div class="four wide field"><label>&nbsp;</label><button class="ui button">{{ctx.Locale.Tr "org_project.repository.link"}}</button></div></div>
-				</form>
-			{{end}}
-		</div>
+
 		{{if and .CanEditOrgProjects (eq .OrgProject.Lifecycle "active")}}
-			<div class="ui segment">
-				<h3 class="ui header">{{ctx.Locale.Tr "org_project.edit"}}</h3>
-				<form class="ui form" method="post" action="{{.OrgProjectBaseLink}}/{{.OrgProject.Slug}}">{{.CsrfTokenHtml}}<input type="hidden" name="version" value="{{.OrgProject.Version}}"><div class="required field"><label for="name">{{ctx.Locale.Tr "org_project.name"}}</label><input id="name" name="name" value="{{.OrgProject.Name}}" required></div><div class="required field"><label for="slug">{{ctx.Locale.Tr "org_project.slug"}}</label><input id="slug" name="slug" value="{{.OrgProject.Slug}}" required></div><div class="field"><label for="description">{{ctx.Locale.Tr "org_project.description"}}</label><textarea id="description" name="description" rows="4">{{.OrgProject.Description}}</textarea></div><div data-org-project-form data-schema="{{JsonUtils.EncodeToString .OrgProjectSchema}}" data-values="{{.OrgProjectValues}}" data-members="{{JsonUtils.EncodeToString .OrgProjectMembers}}"></div><button class="ui primary button">{{ctx.Locale.Tr "save"}}</button></form>
-			</div>
-			<div class="ui danger segment">
-				<h3 class="ui header">{{ctx.Locale.Tr "org_project.archive"}}</h3>
-				<p>{{ctx.Locale.Tr "org_project.archive_description"}}</p><form method="post" action="{{.OrgProjectBaseLink}}/{{.OrgProject.Slug}}/archive">{{.CsrfTokenHtml}}<input type="hidden" name="version" value="{{.OrgProject.Version}}"><button class="ui red button">{{ctx.Locale.Tr "org_project.archive"}}</button></form>
-			</div>
+			<details class="ui danger segment org-project-danger-zone"><summary>{{ctx.Locale.Tr "org_project.archive"}}</summary><p>{{ctx.Locale.Tr "org_project.archive_description"}}</p><form method="post" action="{{.OrgProjectBaseLink}}/{{.OrgProject.Slug}}/archive">{{.CsrfTokenHtml}}<input type="hidden" name="version" value="{{.OrgProject.Version}}"><button class="ui red button">{{ctx.Locale.Tr "org_project.archive"}}</button></form></details>
 		{{end}}
 	</div>
 </div>
