@@ -1,3 +1,5 @@
+import {createApp, nextTick} from 'vue';
+import ConfigEditor from './ConfigEditor.vue';
 import {normalizeSchema, validateSchemaClient} from './types.ts';
 import type {OrgProjectSchema} from './types.ts';
 
@@ -6,6 +8,23 @@ function schema(fields: OrgProjectSchema['fields']): OrgProjectSchema {
 }
 
 describe('ConfigEditor schema helpers', () => {
+  test('mounts reactive schema and serializes normalized config', async () => {
+    const el = document.createElement('div');
+    expect(() => createApp(ConfigEditor, {schema: schema([])}).mount(el)).not.toThrow();
+    await nextTick();
+
+    const textarea = el.querySelector<HTMLTextAreaElement>('textarea[name="schema"]')!;
+    expect(JSON.parse(textarea.value)).toEqual({...schema([]), list_view: {columns: [], sort: []}});
+
+    const addFieldButton = Array.from(el.querySelectorAll('button')).find((button) => button.textContent === 'Add field')!;
+    addFieldButton.click();
+    await nextTick();
+
+    expect(JSON.parse(textarea.value).fields).toEqual([
+      {key: 'field_1', label: 'Field 1', type: 'short_text', order: 0},
+    ]);
+  });
+
   test('normalizes stable field and option ordering', () => {
     const result = normalizeSchema(schema([{key: 'stage', label: 'Stage', type: 'single_select', order: 40, options: [
       {key: 'done', label: 'Done', order: 20},

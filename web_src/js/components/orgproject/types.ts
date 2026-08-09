@@ -135,7 +135,8 @@ export type OrgProjectActivitySummary = {
 };
 
 export function cloneJSON<T>(value: T): T {
-  return structuredClone(value);
+  // eslint-disable-next-line unicorn/prefer-structured-clone -- structuredClone rejects Vue proxies.
+  return JSON.parse(JSON.stringify(value)) as T;
 }
 
 export function sortedActiveFields(schema: OrgProjectSchema): OrgProjectField[] {
