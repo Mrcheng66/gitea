@@ -27,6 +27,7 @@ printf '%s' "$compose_config" | jq -e '
 printf '%s' "$compose_config" | jq -e --arg repo_dir "$REPO_DIR" '
   .services.gitea.image == "code-lab/gitea:1.27.1-internal.1" and
   .services.gitea.build.context == $repo_dir and
+  .services.gitea.build.args.ALPINE_MIRROR == "https://mirrors.aliyun.com/alpine" and
   .services.gitea.environment.GITEA__org_project__ENABLED == "true" and
   .services.gitea.environment.GITEA__database__DB_TYPE == "sqlite3"
 ' >/dev/null
@@ -55,6 +56,23 @@ for metadata_arg in GITEA_VERSION GITEA_UPSTREAM_COMMIT GITEA_INTERNAL_COMMIT GI
     exit 1
   }
 done
+
+for dockerfile in "$REPO_DIR/Dockerfile" "$REPO_DIR/Dockerfile.rootless"; do
+  apk_stage_count=$(grep -c 'apk --no-cache add' "$dockerfile")
+  mirror_stage_count=$(grep -c '^ARG ALPINE_MIRROR=https://mirrors.aliyun.com/alpine$' "$dockerfile")
+  repository_rewrite_count=$(grep -c '/etc/apk/repositories' "$dockerfile")
+  if [[ $mirror_stage_count != "$apk_stage_count" || $repository_rewrite_count != "$apk_stage_count" ]]; then
+    printf 'Every apk stage must use the configurable Alpine mirror: %s\n' "$dockerfile" >&2
+    exit 1
+  fi
+done
+
+runtime_apk_line=$(grep -n 'apk --no-cache add' "$REPO_DIR/Dockerfile" | tail -1 | cut -d: -f1)
+metadata_label_line=$(grep -n '^LABEL org.opencontainers.image.title=' "$REPO_DIR/Dockerfile" | cut -d: -f1)
+if ((metadata_label_line <= runtime_apk_line)); then
+  printf 'Release metadata labels must follow runtime package installation\n' >&2
+  exit 1
+fi
 
 grep -q '^OnCalendar=\*-\*-\* 03:00:00$' deploy/systemd/gitea-backup.timer
 grep -q '^OnUnitActiveSec=5min$' deploy/systemd/gitea-health.timer

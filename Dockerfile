@@ -1,7 +1,9 @@
 # syntax=docker/dockerfile:1
 # Build frontend on the native platform to avoid QEMU-related issues with nodejs ecosystem
 FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.26.4-alpine3.24@sha256:3ad57304ad93bbec8548a0437ad9e06a455660655d9af011d58b993f6f615648 AS frontend-build
-RUN apk --no-cache add build-base git nodejs pnpm
+ARG ALPINE_MIRROR=https://mirrors.aliyun.com/alpine
+RUN sed -i "s#https://dl-cdn.alpinelinux.org/alpine#${ALPINE_MIRROR}#g" /etc/apk/repositories && \
+    apk --no-cache add build-base git nodejs pnpm
 WORKDIR /src
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store pnpm install --frozen-lockfile
@@ -16,9 +18,11 @@ ARG TAGS=""
 ENV TAGS="bindata timetzdata $TAGS"
 ARG CGO_EXTRA_CFLAGS
 ARG GOPROXY=https://goproxy.cn,direct
+ARG ALPINE_MIRROR=https://mirrors.aliyun.com/alpine
 
 # Build deps
-RUN apk --no-cache add \
+RUN sed -i "s#https://dl-cdn.alpinelinux.org/alpine#${ALPINE_MIRROR}#g" /etc/apk/repositories && \
+    apk --no-cache add \
     build-base \
     git
 
@@ -49,20 +53,11 @@ RUN chmod 755 /tmp/local/usr/bin/entrypoint \
 
 FROM docker.io/library/alpine:3.24 AS gitea
 
-ARG GITEA_VERSION
-ARG GITEA_UPSTREAM_COMMIT
-ARG GITEA_INTERNAL_COMMIT
-ARG GITEA_BUILD_DATE
-LABEL org.opencontainers.image.title="Internal Gitea" \
-      org.opencontainers.image.version="$GITEA_VERSION" \
-      org.opencontainers.image.revision="$GITEA_INTERNAL_COMMIT" \
-      org.opencontainers.image.created="$GITEA_BUILD_DATE" \
-      com.code-lab.gitea.upstream-version="1.27.1" \
-      com.code-lab.gitea.upstream-commit="$GITEA_UPSTREAM_COMMIT"
-
 EXPOSE 22 3000
 
-RUN apk --no-cache add \
+ARG ALPINE_MIRROR=https://mirrors.aliyun.com/alpine
+RUN sed -i "s#https://dl-cdn.alpinelinux.org/alpine#${ALPINE_MIRROR}#g" /etc/apk/repositories && \
+    apk --no-cache add \
     bash \
     ca-certificates \
     curl \
@@ -89,6 +84,17 @@ RUN addgroup \
 
 COPY --from=build-env /tmp/local /
 COPY --from=build-env /go/src/gitea.dev/gitea /app/gitea/gitea
+
+ARG GITEA_VERSION
+ARG GITEA_UPSTREAM_COMMIT
+ARG GITEA_INTERNAL_COMMIT
+ARG GITEA_BUILD_DATE
+LABEL org.opencontainers.image.title="Internal Gitea" \
+      org.opencontainers.image.version="$GITEA_VERSION" \
+      org.opencontainers.image.revision="$GITEA_INTERNAL_COMMIT" \
+      org.opencontainers.image.created="$GITEA_BUILD_DATE" \
+      com.code-lab.gitea.upstream-version="1.27.1" \
+      com.code-lab.gitea.upstream-commit="$GITEA_UPSTREAM_COMMIT"
 
 ENV USER=git
 ENV GITEA_CUSTOM=/data/gitea
