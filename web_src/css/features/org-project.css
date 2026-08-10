@@ -281,8 +281,7 @@ body:has(.project-workbench) {
 
 .org-project-toolbar.ui.form {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  flex-direction: column;
   gap: var(--project-space-2xs);
   padding: var(--project-space-xs);
   border: 1px solid var(--project-color-rule);
@@ -291,16 +290,36 @@ body:has(.project-workbench) {
   background: var(--project-color-surface);
 }
 
-.org-project-toolbar-search {
-  flex: 1 1 16rem;
-  min-width: min(100%, 14rem);
+.org-project-toolbar-primary {
+  display: grid;
+  grid-template-columns: minmax(16rem, 2fr) repeat(4, minmax(0, 1fr));
+  gap: var(--project-space-2xs);
+  width: 100%;
 }
 
-.org-project-toolbar.ui.form select,
-.org-project-toolbar .org-project-filter-dropdown,
-.org-project-toolbar.ui.form > input {
-  width: auto;
-  min-width: 8.5rem;
+.org-project-toolbar-search {
+  min-width: 0;
+}
+
+.org-project-toolbar-primary select,
+.org-project-toolbar-primary .org-project-filter-dropdown,
+.org-project-toolbar-primary > input {
+  width: 100%;
+  min-width: 0;
+}
+
+.org-project-toolbar-secondary,
+.org-project-toolbar-checks,
+.org-project-toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--project-space-2xs);
+}
+
+.org-project-toolbar-secondary {
+  justify-content: space-between;
+  width: 100%;
 }
 
 .org-project-toolbar-check {
@@ -1519,15 +1538,12 @@ body:has(.project-workbench) {
     align-items: flex-start;
   }
 
-  .org-project-toolbar-search {
-    flex-basis: 100%;
+  .org-project-toolbar-primary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .org-project-toolbar.ui.form select,
-  .org-project-toolbar .org-project-filter-dropdown,
-  .org-project-toolbar.ui.form > input {
-    flex: 1 1 9rem;
-    min-width: 0;
+  .org-project-toolbar-search {
+    grid-column: 1 / -1;
   }
 
   .org-project-table.ui.table {
@@ -1606,6 +1622,10 @@ body:has(.project-workbench) {
 @media (max-width: 374.98px) {
   .org-project-summary-grid {
     grid-template-columns: 1fr;
+  }
+
+  .org-project-toolbar-primary {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

@@ -71,6 +71,35 @@ test('publish configuration and create a native organization project', async ({p
 
     await page.goto(`/org/${orgName}/projects/list`);
     await expect(page.getByText(projectName)).toBeVisible();
+
+    const toolbarPrimary = page.locator('.org-project-toolbar-primary');
+    const toolbarSecondary = page.locator('.org-project-toolbar-secondary');
+    await expect(toolbarPrimary.locator('#org-project-search')).toBeVisible();
+    await expect(toolbarPrimary.locator('#org-project-filter-owner')).toBeAttached();
+    await expect(toolbarPrimary.locator('#org-project-filter-risk')).toBeAttached();
+    await expect(toolbarPrimary.locator('#org-project-filter-stage')).toBeAttached();
+    await expect(toolbarPrimary.locator('#org-project-due')).toBeAttached();
+    await expect(toolbarSecondary.locator('input[name="mine"]')).toBeVisible();
+    await expect(toolbarSecondary.locator('input[name="include_archived"]')).toBeVisible();
+    await expect(toolbarSecondary.getByRole('button', {name: 'Apply filters'})).toBeVisible();
+
+    const primaryControlY = await Promise.all([
+      toolbarPrimary.locator('#org-project-search'),
+      toolbarPrimary.locator('#org-project-filter-owner').locator('..'),
+      toolbarPrimary.locator('#org-project-filter-risk').locator('..'),
+      toolbarPrimary.locator('#org-project-filter-stage').locator('..'),
+      toolbarPrimary.locator('#org-project-due').locator('..'),
+    ].map(async (control) => (await control.boundingBox())!.y));
+    expect(Math.max(...primaryControlY) - Math.min(...primaryControlY)).toBeLessThanOrEqual(1);
+
+    const primaryBox = (await toolbarPrimary.boundingBox())!;
+    const secondaryBox = (await toolbarSecondary.boundingBox())!;
+    expect(secondaryBox.y).toBeGreaterThanOrEqual(primaryBox.y + primaryBox.height);
+
+    for (const width of [320, 375, 414, 768]) {
+      await page.setViewportSize({width, height: 800});
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    }
   } finally {
     await apiDeleteOrg(request, orgName);
   }
