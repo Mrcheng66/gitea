@@ -1,12 +1,14 @@
 import {test, expect} from '@playwright/test';
-import {apiCreateOrg, apiDeleteOrg, login, randomString} from './utils.ts';
+import {apiCreateOrg, apiCreateOrgRepo, apiDeleteOrg, apiDeleteRepo, login, randomString} from './utils.ts';
 
 test('publish configuration and create a native organization project', async ({page, request}) => {
   const orgName = `e2e-native-project-${randomString(8)}`;
   const projectSlug = `project-${randomString(8)}`;
   const projectName = 'Native project acceptance';
+  const repoName = `repo-${randomString(8)}`;
 
-  await Promise.all([apiCreateOrg(request, orgName), login(page)]);
+  await apiCreateOrg(request, orgName);
+  await Promise.all([apiCreateOrgRepo(request, orgName, {name: repoName, autoInit: false}), login(page)]);
 
   try {
     await page.goto(`/org/${orgName}/settings/projects`);
@@ -69,6 +71,18 @@ test('publish configuration and create a native organization project', async ({p
     await expect(page.getByRole('link', {name: 'Activity'})).toBeVisible();
     await expect(page.getByRole('link', {name: 'History'})).toBeVisible();
 
+    const repositoryLinker = page.locator('.org-project-repository-linker');
+    await repositoryLinker.locator('summary').click();
+    const repositorySearch = repositoryLinker.getByLabel('Repository');
+    const searchResponse = page.waitForResponse((response) => new URL(response.url()).pathname.endsWith('/repo/search'));
+    await repositorySearch.pressSequentially(repoName);
+    expect((await searchResponse).ok()).toBe(true);
+    const repositoryResult = repositoryLinker.locator('.result').filter({hasText: `${orgName}/${repoName}`});
+    await expect(repositoryResult).toBeVisible();
+    await repositoryResult.click();
+    await repositoryLinker.getByRole('button', {name: 'Link repository'}).click();
+    await expect(page.getByRole('link', {name: `${orgName}/${repoName}`})).toBeVisible();
+
     await page.goto(`/org/${orgName}/projects/list`);
     await expect(page.getByText(projectName)).toBeVisible();
 
@@ -104,6 +118,7 @@ test('publish configuration and create a native organization project', async ({p
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     }
   } finally {
+    await apiDeleteRepo(request, orgName, repoName);
     await apiDeleteOrg(request, orgName);
   }
 });

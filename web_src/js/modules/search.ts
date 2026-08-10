@@ -8,6 +8,13 @@ export type SearchResult = {
   title: string;
   description?: string;
   image?: string;
+  value?: string;
+};
+
+type SearchBoxOptions = {
+  minCharacters?: number;
+  onInput?: (value: string) => void;
+  onSelect?: (result: SearchResult) => void;
 };
 
 function buildResultHTML(result: SearchResult): string {
@@ -32,7 +39,7 @@ document.addEventListener('click', (event) => {
 });
 
 /** Attach an API-driven autocomplete to `container`. `parse` maps the raw JSON response into the rendered result list. The selected result's title is written to the input on selection. */
-export function attachSearchBox<T = unknown>(container: HTMLElement, url: string, parse: (raw: T, query: string) => SearchResult[], {minCharacters = 2}: {minCharacters?: number} = {}): void {
+export function attachSearchBox<T = unknown>(container: HTMLElement, url: string, parse: (raw: T, query: string) => SearchResult[], {minCharacters = 2, onInput, onSelect}: SearchBoxOptions = {}): void {
   const input = container.querySelector<HTMLInputElement>('input.prompt') ?? container.querySelector<HTMLInputElement>('input');
   if (!input) return;
 
@@ -64,7 +71,10 @@ export function attachSearchBox<T = unknown>(container: HTMLElement, url: string
   };
 
   const select = (item: HTMLElement) => {
-    input.value = itemResults.get(item)!.title;
+    const result = itemResults.get(item);
+    if (!result) return;
+    input.value = result.title;
+    onSelect?.(result);
     input.dispatchEvent(new Event('change', {bubbles: true}));
     hide();
   };
@@ -84,11 +94,14 @@ export function attachSearchBox<T = unknown>(container: HTMLElement, url: string
     }
   });
   // cancel + hide ensures a debounced fetch scheduled before any of these can't fire afterwards
-  const dismiss = () => { search.cancel(); hide() };
+  const dismiss = () => { search.cancel({upcomingOnly: true}); hide() };
 
-  input.addEventListener('input', () => search(input.value));
+  input.addEventListener('input', () => {
+    onInput?.(input.value);
+    search(input.value);
+  });
   input.addEventListener('focus', () => { if (itemResults.size) resultsEl.style.display = 'block'; });
-  input.addEventListener('blur', () => { search.cancel(); setTimeout(hide, 150) }); // hide deferred so a result mousedown can land first
+  input.addEventListener('blur', () => { search.cancel({upcomingOnly: true}); setTimeout(hide, 150) }); // hide deferred so a result mousedown can land first
   input.addEventListener('keydown', (event) => {
     const resultEls = Array.from(resultsEl.querySelectorAll<HTMLElement>('.result'));
     if (!resultEls.length) return;

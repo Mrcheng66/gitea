@@ -47,6 +47,13 @@ export async function apiCreateRepo(requestContext: APIRequestContext, {name, au
   }), 'apiCreateRepo');
 }
 
+export async function apiCreateOrgRepo(requestContext: APIRequestContext, org: string, {name, autoInit = true, headers}: {name: string; autoInit?: boolean; headers?: Record<string, string>}) {
+  await apiRetry(() => requestContext.post(`${baseUrl()}/api/v1/orgs/${org}/repos`, {
+    headers: headers || apiHeaders(),
+    data: {name, auto_init: autoInit},
+  }), 'apiCreateOrgRepo');
+}
+
 export async function apiCreateOrg(requestContext: APIRequestContext, name: string, {headers}: {headers?: Record<string, string>} = {}) {
   await apiRetry(() => requestContext.post(`${baseUrl()}/api/v1/orgs`, {
     headers: headers || apiHeaders(),

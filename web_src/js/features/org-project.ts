@@ -1,5 +1,6 @@
 import {createApp} from 'vue';
 import type {Component} from 'vue';
+import {attachSearchBox} from '../modules/search.ts';
 
 function parseJSON<T>(el: Element, attribute: string, fallback: T): T {
   const value = el.getAttribute(attribute);
@@ -60,6 +61,54 @@ export function initOrgProjectCreateSummary() {
     form.addEventListener('input', refresh);
     form.addEventListener('change', refresh);
     refresh();
+  }
+}
+
+type RepositorySearchResponse = {
+  data: Array<{repository: {id: number, full_name: string}}>,
+};
+
+export function initOrgProjectRepositorySearch() {
+  for (const container of document.querySelectorAll<HTMLElement>('[data-org-project-repository-search]')) {
+    if (container.hasAttribute('data-org-project-repository-search-initialized')) continue;
+    const form = container.closest<HTMLFormElement>('form');
+    const input = container.querySelector<HTMLInputElement>('input.prompt');
+    const repositoryID = form?.querySelector<HTMLInputElement>('input[name="repository_id"]');
+    const ownerID = container.getAttribute('data-owner-id');
+    if (!form || !input || !repositoryID || !ownerID) continue;
+
+    container.setAttribute('data-org-project-repository-search-initialized', 'true');
+    const panel = container.closest<HTMLElement>('.org-project-repository-panel');
+    const linkedRepositoryIDs = new Set(Array.from(
+      panel?.querySelectorAll<HTMLElement>('[data-org-project-repository-id]') ?? [],
+      (item) => item.getAttribute('data-org-project-repository-id'),
+    ).filter((id): id is string => Boolean(id)));
+    const selectError = container.getAttribute('data-select-error') || 'Please select a repository from the search results.';
+
+    attachSearchBox<RepositorySearchResponse>(
+      container,
+      `${window.config.appSubUrl}/repo/search?q={query}&uid=${ownerID}`,
+      (response) => response.data
+        .filter(({repository}) => !linkedRepositoryIDs.has(String(repository.id)))
+        .map(({repository}) => ({title: repository.full_name, value: String(repository.id)})),
+      {
+        onInput: () => {
+          repositoryID.value = '';
+          input.setCustomValidity('');
+        },
+        onSelect: (result) => {
+          repositoryID.value = result.value || '';
+          input.setCustomValidity('');
+        },
+      },
+    );
+
+    form.addEventListener('submit', (event) => {
+      if (repositoryID.value) return;
+      event.preventDefault();
+      input.setCustomValidity(selectError);
+      input.reportValidity();
+    });
   }
 }
 
@@ -132,4 +181,5 @@ export async function initOrgProject() {
     })),
   ]);
   initOrgProjectCreateSummary();
+  initOrgProjectRepositorySearch();
 }

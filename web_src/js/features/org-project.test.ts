@@ -1,6 +1,11 @@
-import {initOrgProjectCreateSummary} from './org-project.ts';
+import {initOrgProjectCreateSummary, initOrgProjectRepositorySearch} from './org-project.ts';
+import {GET} from '../modules/fetch.ts';
 
-describe('organization project create summary', () => {
+vi.mock('../modules/fetch.ts', () => ({
+  GET: vi.fn(),
+}));
+
+describe('organization project create summary', {concurrent: false}, () => {
   test('reads and updates native form controls', () => {
     document.body.innerHTML = `
       <form data-org-project-create-form>
@@ -50,5 +55,64 @@ describe('organization project create summary', () => {
   test('ignores pages without a marked create form', () => {
     document.body.innerHTML = '<form></form>';
     expect(() => initOrgProjectCreateSummary()).not.toThrow();
+  });
+});
+
+describe('organization project repository search', {concurrent: false}, () => {
+  beforeEach(() => {
+    document.body.innerHTML = `
+      <section class="org-project-repository-panel">
+        <div data-org-project-repository-id="7"></div>
+        <form>
+          <div class="ui search" data-org-project-repository-search data-owner-id="3" data-select-error="Select a repository">
+            <input class="prompt" required>
+            <div class="results"></div>
+          </div>
+          <input type="hidden" name="repository_id">
+        </form>
+      </section>
+    `;
+    vi.mocked(GET).mockReset();
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  test('selects a visible unlinked repository and invalidates edited selections', async () => {
+    vi.mocked(GET).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        data: [
+          {repository: {id: 7, full_name: 'org3/linked'}},
+          {repository: {id: 8, full_name: 'org3/repo8'}},
+        ],
+      }),
+    } as Response);
+    initOrgProjectRepositorySearch();
+
+    const form = document.querySelector<HTMLFormElement>('form')!;
+    const input = form.querySelector<HTMLInputElement>('.prompt')!;
+    const repositoryID = form.querySelector<HTMLInputElement>('[name="repository_id"]')!;
+    input.value = 'repo';
+    input.dispatchEvent(new Event('input', {bubbles: true}));
+    await vi.advanceTimersByTimeAsync(200);
+
+    expect(GET).toHaveBeenCalledWith('/repo/search?q=repo&uid=3', expect.objectContaining({signal: expect.any(AbortSignal)}));
+    expect(document.querySelectorAll('.result')).toHaveLength(1);
+    expect(document.querySelector('.result')!.textContent).toContain('org3/repo8');
+
+    document.querySelector<HTMLElement>('.result')!.dispatchEvent(new MouseEvent('mousedown', {bubbles: true}));
+    expect(input.value).toBe('org3/repo8');
+    expect(repositoryID.value).toBe('8');
+
+    input.value = 'changed';
+    input.dispatchEvent(new Event('input', {bubbles: true}));
+    expect(repositoryID.value).toBe('');
+
+    const submit = new SubmitEvent('submit', {bubbles: true, cancelable: true});
+    expect(form.dispatchEvent(submit)).toBe(false);
+    expect(input.validationMessage).toBe('Select a repository');
   });
 });
