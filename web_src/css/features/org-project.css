@@ -297,13 +297,13 @@ body:has(.project-workbench) {
   width: 100%;
 }
 
-.org-project-toolbar-search {
+.org-project-toolbar-field {
   min-width: 0;
 }
 
-.org-project-toolbar-primary select,
-.org-project-toolbar-primary .org-project-filter-dropdown,
-.org-project-toolbar-primary > input {
+.org-project-toolbar-field select,
+.org-project-toolbar-field .org-project-filter-dropdown,
+.org-project-toolbar-field > input {
   width: 100%;
   min-width: 0;
 }

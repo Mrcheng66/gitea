@@ -79,18 +79,21 @@ test('publish configuration and create a native organization project', async ({p
     await expect(toolbarPrimary.locator('#org-project-filter-risk')).toBeAttached();
     await expect(toolbarPrimary.locator('#org-project-filter-stage')).toBeAttached();
     await expect(toolbarPrimary.locator('#org-project-due')).toBeAttached();
+    await expect(toolbarPrimary.locator('label')).toHaveCount(5);
+    for (const label of await toolbarPrimary.locator('label').all()) {
+      await expect(label).toHaveCSS('position', 'absolute');
+      await expect(label).toHaveCSS('width', '1px');
+      await expect(label).toHaveCSS('height', '1px');
+      await expect(label).toHaveCSS('overflow', 'hidden');
+    }
     await expect(toolbarSecondary.locator('input[name="mine"]')).toBeVisible();
     await expect(toolbarSecondary.locator('input[name="include_archived"]')).toBeVisible();
-    await expect(toolbarSecondary.getByRole('button', {name: 'Apply filters'})).toBeVisible();
+    await expect(toolbarSecondary.getByRole('button', {name: 'Filter'})).toBeVisible();
 
-    const primaryControlY = await Promise.all([
-      toolbarPrimary.locator('#org-project-search'),
-      toolbarPrimary.locator('#org-project-filter-owner').locator('..'),
-      toolbarPrimary.locator('#org-project-filter-risk').locator('..'),
-      toolbarPrimary.locator('#org-project-filter-stage').locator('..'),
-      toolbarPrimary.locator('#org-project-due').locator('..'),
-    ].map(async (control) => (await control.boundingBox())!.y));
-    expect(Math.max(...primaryControlY) - Math.min(...primaryControlY)).toBeLessThanOrEqual(1);
+    const primaryFields = toolbarPrimary.locator('.org-project-toolbar-field');
+    await expect(primaryFields).toHaveCount(5);
+    const primaryFieldY = await Promise.all((await primaryFields.all()).map(async (field) => (await field.boundingBox())!.y));
+    expect(Math.max(...primaryFieldY) - Math.min(...primaryFieldY)).toBeLessThanOrEqual(1);
 
     const primaryBox = (await toolbarPrimary.boundingBox())!;
     const secondaryBox = (await toolbarSecondary.boundingBox())!;
