@@ -2,8 +2,10 @@
 # Build frontend on the native platform to avoid QEMU-related issues with nodejs ecosystem
 FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.26.4-alpine3.24@sha256:3ad57304ad93bbec8548a0437ad9e06a455660655d9af011d58b993f6f615648 AS frontend-build
 ARG ALPINE_MIRROR=https://mirrors.aliyun.com/alpine
+ARG NPM_REGISTRY=https://registry.npmmirror.com
 RUN sed -i "s#https://dl-cdn.alpinelinux.org/alpine#${ALPINE_MIRROR}#g" /etc/apk/repositories && \
-    apk --no-cache add build-base git nodejs pnpm
+    apk --no-cache add build-base git nodejs npm && \
+    npm install --global pnpm@11.9.0 --registry="${NPM_REGISTRY}"
 WORKDIR /src
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store pnpm install --frozen-lockfile

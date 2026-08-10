@@ -28,6 +28,7 @@ printf '%s' "$compose_config" | jq -e --arg repo_dir "$REPO_DIR" '
   .services.gitea.image == "code-lab/gitea:1.27.1-internal.1" and
   .services.gitea.build.context == $repo_dir and
   .services.gitea.build.args.ALPINE_MIRROR == "https://mirrors.aliyun.com/alpine" and
+  .services.gitea.build.args.NPM_REGISTRY == "https://registry.npmmirror.com" and
   .services.gitea.environment.GITEA__org_project__ENABLED == "true" and
   .services.gitea.environment.GITEA__database__DB_TYPE == "sqlite3"
 ' >/dev/null
@@ -65,7 +66,22 @@ for dockerfile in "$REPO_DIR/Dockerfile" "$REPO_DIR/Dockerfile.rootless"; do
     printf 'Every apk stage must use the configurable Alpine mirror: %s\n' "$dockerfile" >&2
     exit 1
   fi
+
+  grep -q '^ARG NPM_REGISTRY=https://registry.npmmirror.com$' "$dockerfile" || {
+    printf 'Dockerfile is missing the configurable npm registry: %s\n' "$dockerfile" >&2
+    exit 1
+  }
+  grep -q 'npm install --global pnpm@11.9.0 --registry="${NPM_REGISTRY}"' "$dockerfile" || {
+    printf 'Dockerfile must install the pinned pnpm version from npm: %s\n' "$dockerfile" >&2
+    exit 1
+  }
+  if grep -q 'apk --no-cache add .*pnpm' "$dockerfile"; then
+    printf 'Dockerfile must not install pnpm from Alpine: %s\n' "$dockerfile" >&2
+    exit 1
+  fi
 done
+
+grep -q '^NPM_REGISTRY=https://registry.npmmirror.com$' "$COMPOSE_DIR/.env.example"
 
 runtime_apk_line=$(grep -n 'apk --no-cache add' "$REPO_DIR/Dockerfile" | tail -1 | cut -d: -f1)
 metadata_label_line=$(grep -n '^LABEL org.opencontainers.image.title=' "$REPO_DIR/Dockerfile" | cut -d: -f1)
