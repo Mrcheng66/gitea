@@ -40,7 +40,7 @@ function relativeTime(value: string): string {
 }
 
 function visibleEvents(project: ProjectWorkbenchProject) {
-  return project.activity.progress.slice(0, open[project.id] ? 5 : 2);
+  return project.activity.progress.slice(0, open[project.id] ? 5 : 1);
 }
 
 function initials(name: string): string {
@@ -84,6 +84,22 @@ function initials(name: string): string {
               <a class="project-name" :href="project.link">{{ project.name }}</a>
               <p v-if="project.description">{{ project.description }}</p>
             </div>
+            <div class="project-responsibility">
+              <div class="project-responsibility-row">
+                <span class="project-section-label">{{ labels.owner }}</span>
+                <a v-if="project.owner" :href="project.owner.link" class="project-person">
+                  <b>{{ initials(project.owner.full_name) }}</b>{{ project.owner.full_name }}
+                </a>
+                <span v-else class="project-unowned">{{ labels.unowned }}</span>
+              </div>
+              <div class="project-responsibility-row">
+                <span class="project-section-label">{{ labels.participants }}</span>
+                <span v-if="project.participants.length" class="project-participants">
+                  <a v-for="person in project.participants.slice(0, 4)" :key="person.id" :href="person.link" :title="person.full_name">{{ initials(person.full_name) }}</a>
+                </span>
+                <span v-else>—</span>
+              </div>
+            </div>
             <div class="project-deadline" :class="{overdue: project.overdue}">
               <span>{{ labels.target }}</span>
               <strong>{{ shortDate(project.target_date) }}</strong>
@@ -95,6 +111,23 @@ function initials(name: string): string {
             <strong>{{ Math.round(project.progress) }}%</strong>
             <span class="project-progress-evidence">{{ project.activity.release_count }} {{ labels.releases }} · {{ project.activity.merged_pulls }} {{ labels.merged }} · {{ project.activity.open_pulls }} {{ labels.open }}</span>
           </div>
+
+          <section class="project-evidence">
+            <header><span class="project-section-label">{{ labels.realProgress }}</span></header>
+            <p v-if="project.activity_error" class="project-evidence-empty">{{ labels.activityUnavailable }}</p>
+            <p v-else-if="!project.activity.progress.length" class="project-evidence-empty">{{ labels.noEvidence }}</p>
+            <ol v-else>
+              <li v-for="event in visibleEvents(project)" :key="`${event.kind}-${event.repository_id}-${event.link}`">
+                <span class="event-kind" :class="`event-${event.kind}`">{{ eventLabel(event.kind) }}</span>
+                <a :href="event.link">{{ firstLine(event.title) }}</a>
+                <a class="event-repository" :href="event.repository_link">{{ event.repository_full_name }}</a>
+                <span class="event-meta">{{ event.author_name }} · {{ relativeTime(event.occurred_at) }}</span>
+              </li>
+            </ol>
+            <button v-if="project.activity.progress.length > 1" type="button" @click="open[project.id] = !open[project.id]">
+              {{ open[project.id] ? labels.collapse : labels.expand }}
+            </button>
+          </section>
 
           <div class="project-decision-row">
             <div>
@@ -109,39 +142,6 @@ function initials(name: string): string {
               </small>
             </div>
           </div>
-
-          <div class="project-responsibility">
-            <span class="project-section-label">{{ labels.owner }}</span>
-            <a v-if="project.owner" :href="project.owner.link" class="project-person">
-              <b>{{ initials(project.owner.full_name) }}</b>{{ project.owner.full_name }}
-            </a>
-            <span v-else class="project-unowned">{{ labels.unowned }}</span>
-            <span class="project-divider"/>
-            <span class="project-section-label">{{ labels.participants }}</span>
-            <span v-if="project.participants.length" class="project-participants">
-              <a v-for="person in project.participants.slice(0, 4)" :key="person.id" :href="person.link" :title="person.full_name">{{ initials(person.full_name) }}</a>
-            </span>
-            <span v-else>—</span>
-          </div>
-
-          <section class="project-evidence">
-            <header>
-              <span class="project-section-label">{{ labels.realProgress }}</span>
-              <button v-if="project.activity.progress.length > 2" type="button" @click="open[project.id] = !open[project.id]">
-                {{ open[project.id] ? labels.collapse : labels.expand }}
-              </button>
-            </header>
-            <p v-if="project.activity_error" class="project-evidence-empty">{{ labels.activityUnavailable }}</p>
-            <p v-else-if="!project.activity.progress.length" class="project-evidence-empty">{{ labels.noEvidence }}</p>
-            <ol v-else>
-              <li v-for="event in visibleEvents(project)" :key="`${event.kind}-${event.repository_id}-${event.link}`">
-                <span class="event-kind" :class="`event-${event.kind}`">{{ eventLabel(event.kind) }}</span>
-                <a :href="event.link">{{ firstLine(event.title) }}</a>
-                <a class="event-repository" :href="event.repository_link">{{ event.repository_full_name }}</a>
-                <span class="event-meta">{{ event.author_name }} · {{ relativeTime(event.occurred_at) }}</span>
-              </li>
-            </ol>
-          </section>
         </article>
       </main>
 
