@@ -56,8 +56,8 @@ function addFilter() {
       <div v-if="listView.sort?.length" class="org-project-rule-list">
         <div v-for="(sort, index) in listView.sort" :key="index" class="org-project-rule org-project-sort-rule">
           <span class="org-project-rule-index">{{ index + 1 }}</span>
-          <div class="field"><label>{{ label('field') }}</label><select v-model="sort.field_key"><option v-for="field in activeFields" :key="field.key" :value="field.key">{{ field.label }}</option></select></div>
-          <div class="field"><label>{{ label('direction') }}</label><select v-model="sort.direction"><option value="asc">{{ label('ascending') }}</option><option value="desc">{{ label('descending') }}</option></select></div>
+          <div class="field"><label>{{ label('field') }}</label><select v-model="sort.field_key" class="ui fluid selection dropdown org-project-dropdown"><option v-for="field in activeFields" :key="field.key" :value="field.key">{{ field.label }}</option></select></div>
+          <div class="field"><label>{{ label('direction') }}</label><select v-model="sort.direction" class="ui fluid selection dropdown org-project-dropdown"><option value="asc">{{ label('ascending') }}</option><option value="desc">{{ label('descending') }}</option></select></div>
           <button type="button" class="ui tiny basic red button org-project-rule-remove" :aria-label="label('removeSort')" @click="listView.sort!.splice(index, 1)">{{ label('remove') }}</button>
         </div>
       </div>
@@ -78,8 +78,8 @@ function addFilter() {
         <span class="org-project-rule-index">{{ index + 1 }}</span>
         <div class="field"><label>{{ label('key') }}</label><input v-model.trim="filter.key"></div>
         <div class="field"><label>{{ label('label') }}</label><input v-model.trim="filter.label"></div>
-        <div class="field"><label>{{ label('field') }}</label><select v-model="filter.field_key"><option v-for="field in activeFields" :key="field.key" :value="field.key">{{ field.label }}</option></select></div>
-        <div class="field"><label>{{ label('operator') }}</label><select v-model="filter.operator"><option value="eq">{{ label('equals') }}</option><option value="ne">{{ label('notEqual') }}</option><option value="contains">{{ label('contains') }}</option><option value="is_empty">{{ label('isEmpty') }}</option><option value="is_not_empty">{{ label('isNotEmpty') }}</option><option value="gte">{{ label('atLeast') }}</option><option value="lte">{{ label('atMost') }}</option><option value="member">{{ label('containsMember') }}</option></select></div>
+        <div class="field"><label>{{ label('field') }}</label><select v-model="filter.field_key" class="ui fluid selection dropdown org-project-dropdown"><option v-for="field in activeFields" :key="field.key" :value="field.key">{{ field.label }}</option></select></div>
+        <div class="field"><label>{{ label('operator') }}</label><select v-model="filter.operator" class="ui fluid selection dropdown org-project-dropdown"><option value="eq">{{ label('equals') }}</option><option value="ne">{{ label('notEqual') }}</option><option value="contains">{{ label('contains') }}</option><option value="is_empty">{{ label('isEmpty') }}</option><option value="is_not_empty">{{ label('isNotEmpty') }}</option><option value="gte">{{ label('atLeast') }}</option><option value="lte">{{ label('atMost') }}</option><option value="member">{{ label('containsMember') }}</option></select></div>
         <button type="button" class="ui tiny basic red button org-project-rule-remove" :aria-label="label('removeFilter')" @click="filters.splice(index, 1)">{{ label('remove') }}</button>
       </div>
     </div>

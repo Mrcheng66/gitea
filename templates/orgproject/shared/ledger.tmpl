@@ -35,12 +35,12 @@
 			{{$filter := .}}
 			<label class="sr-only" for="org-project-filter-{{.Key}}">{{.Label}}</label>
 			{{if eq .Field.Type "single_select"}}
-				<select id="org-project-filter-{{.Key}}" name="filter_{{.Key}}" aria-label="{{.Label}}">
+				<select id="org-project-filter-{{.Key}}" class="ui selection dropdown org-project-dropdown org-project-filter-dropdown" name="filter_{{.Key}}" aria-label="{{.Label}}">
 					<option value="">{{.Label}}</option>
 					{{range .Field.Options}}<option value="{{.Key}}" {{if eq $filter.Value .Key}}selected{{end}}>{{.Label}}</option>{{end}}
 				</select>
 			{{else if or (eq .Field.Type "member") (eq .Field.Type "member_array")}}
-				<select id="org-project-filter-{{.Key}}" name="filter_{{.Key}}" aria-label="{{.Label}}">
+				<select id="org-project-filter-{{.Key}}" class="ui search selection dropdown org-project-dropdown org-project-filter-dropdown" name="filter_{{.Key}}" aria-label="{{.Label}}">
 					<option value="">{{.Label}}</option>
 					{{range .Members}}<option value="{{.ID}}" {{if eq $filter.Value (printf "%d" .ID)}}selected{{end}}>{{if .FullName}}{{.FullName}}{{else}}{{.Name}}{{end}}</option>{{end}}
 				</select>
@@ -49,7 +49,7 @@
 			{{end}}
 		{{end}}
 		<label class="sr-only" for="org-project-due">{{ctx.Locale.Tr "org_project.due_filter"}}</label>
-		<select id="org-project-due" name="due" aria-label="{{ctx.Locale.Tr "org_project.due_filter"}}">
+		<select id="org-project-due" class="ui selection dropdown org-project-dropdown org-project-filter-dropdown" name="due" aria-label="{{ctx.Locale.Tr "org_project.due_filter"}}">
 			<option value="">{{ctx.Locale.Tr "org_project.due_filter"}}</option>
 			<option value="overdue" {{if eq .OrgProjectDue "overdue"}}selected{{end}}>{{ctx.Locale.Tr "org_project.due_overdue"}}</option>
 			<option value="week" {{if eq .OrgProjectDue "week"}}selected{{end}}>{{ctx.Locale.Tr "org_project.due_week"}}</option>

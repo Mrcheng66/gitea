@@ -74,7 +74,7 @@ function addOption(field: OrgProjectField) {
           <div class="org-project-editor-grid org-project-field-grid">
             <div class="field"><label>{{ label('key') }}</label><input v-model.trim="field.key" :disabled="field.archived"></div>
             <div class="field"><label>{{ label('label') }}</label><input v-model.trim="field.label" :disabled="field.archived"></div>
-            <div class="field"><label>{{ label('type') }}</label><select v-model="field.type" :disabled="field.archived"><option v-for="type in fieldTypes" :key="type" :value="type">{{ label(`type_${type}`) }}</option></select></div>
+            <div class="field"><label>{{ label('type') }}</label><select v-model="field.type" class="ui fluid selection dropdown org-project-dropdown" :disabled="field.archived"><option v-for="type in fieldTypes" :key="type" :value="type">{{ label(`type_${type}`) }}</option></select></div>
             <label class="org-project-inline-check"><input v-model="field.required" type="checkbox" :disabled="field.archived"> {{ label('required') }}</label>
           </div>
           <div v-if="field.type === 'single_select' || field.type === 'multi_select'" class="org-project-field-options">

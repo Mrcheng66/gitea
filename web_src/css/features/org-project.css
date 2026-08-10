@@ -1,3 +1,7 @@
+/* Hallmark · component: organization-project form controls · genre: modern-minimal · theme: Gitea native
+ * states: default · hover · focus · active · disabled · loading · error · success
+ * contrast: pass (40–41, Gitea theme variables) · slop: pass (1–58) · mobile: pass (320/375/414/768)
+ */
 /* Hallmark · pre-emit critique: P5 H5 E5 S5 R5 V5 */
 /* Hallmark · genre: modern-minimal · tone: Guided Workbench · palette: Gitea green · macrostructure: Guided Workbench · theme: Gitea native · nav/footer: inherited · contrast/slop/tokens/responsive/mobile: pass */
 /* Hallmark · scope: project configuration · tone: technical-utilitarian · palette: Gitea green · macrostructure: Index-First · theme: Gitea native · enrichment: none · nav/footer: inherited · contrast/slop/honest/chrome/tokens/responsive/mobile/icons: pass */
@@ -293,6 +297,7 @@ body:has(.project-workbench) {
 }
 
 .org-project-toolbar.ui.form select,
+.org-project-toolbar .org-project-filter-dropdown,
 .org-project-toolbar.ui.form > input {
   width: auto;
   min-width: 8.5rem;
@@ -733,6 +738,135 @@ body:has(.project-workbench) {
 
 .org-project-form-wide {
   grid-column: 1 / -1;
+}
+
+.org-projects .ui.selection.dropdown.org-project-dropdown,
+.org-projects .org-project-date-input {
+  width: 100%;
+  min-width: 0;
+  min-height: var(--project-control-height);
+  border: 1px solid var(--color-input-border);
+  border-radius: var(--project-radius-input);
+  outline: 2px solid transparent;
+  outline-offset: 1px;
+  color: var(--color-input-text);
+  background: var(--color-input-background);
+  box-shadow: none;
+  transition: background-color var(--project-duration-short) var(--project-ease-out), border-color var(--project-duration-short) var(--project-ease-out);
+}
+
+.org-projects .ui.selection.dropdown.org-project-dropdown {
+  display: flex;
+  align-items: center;
+  padding-block: 0.78571429em;
+  padding-inline: 1em 3.2em;
+  line-height: 1em;
+}
+
+.org-projects .ui.multiple.selection.dropdown.org-project-dropdown {
+  align-items: center;
+  gap: var(--project-space-3xs);
+  padding: var(--project-space-3xs) 2.75rem var(--project-space-3xs) var(--project-space-3xs);
+}
+
+.org-projects .ui.multiple.dropdown.org-project-dropdown > .ui.label {
+  margin: 0;
+  padding: var(--project-space-3xs) var(--project-space-2xs);
+  border: 1px solid color-mix(in srgb, var(--project-color-accent) 28%, var(--project-color-rule));
+  border-radius: var(--project-radius-control);
+  color: var(--project-color-ink);
+  background: color-mix(in srgb, var(--project-color-accent) 8%, var(--project-color-surface));
+  box-shadow: none;
+  font-weight: var(--font-weight-medium);
+}
+
+.org-projects .ui.selection.dropdown.org-project-dropdown > .dropdown.icon {
+  right: var(--project-space-2xs);
+  color: var(--project-color-ink-muted);
+}
+
+.org-projects .ui.selection.dropdown.org-project-dropdown > .menu {
+  width: calc(100% + 2px);
+  min-width: calc(100% + 2px);
+  max-width: min(26rem, calc(100vw - 2rem));
+  border-color: var(--project-color-rule);
+  border-radius: 0 0 var(--project-radius-input) var(--project-radius-input);
+  box-shadow: 0 6px 18px var(--color-shadow);
+}
+
+.org-projects .ui.selection.dropdown.org-project-dropdown > .menu > .item {
+  min-height: 2.25rem;
+  padding: var(--project-space-2xs) var(--project-space-xs) !important;
+  color: var(--project-color-ink);
+  font-size: var(--project-text-sm);
+}
+
+.org-projects .ui.selection.dropdown.org-project-dropdown > .menu > .item:is(.active, .selected) {
+  color: var(--project-color-ink);
+  background: color-mix(in srgb, var(--project-color-accent) 8%, var(--project-color-surface));
+}
+
+.org-projects .ui.selection.dropdown.org-project-dropdown:is(:focus-visible, :focus-within, .active, .visible, .is-focus),
+.org-projects .org-project-date-input:is(:focus-visible, .is-focus) {
+  border-color: var(--project-color-accent);
+  outline-color: var(--project-color-accent);
+  box-shadow: none;
+}
+
+.org-projects .ui.selection.dropdown.org-project-dropdown:is(:active, .is-active),
+.org-projects .org-project-date-input:is(:active, .is-active) {
+  background: var(--project-color-surface-muted);
+}
+
+.org-projects .ui.selection.dropdown.org-project-dropdown:is(.disabled, [aria-disabled="true"]),
+.org-projects .org-project-date-input:disabled {
+  cursor: not-allowed;
+  opacity: var(--opacity-disabled);
+  background: var(--project-color-surface-muted);
+}
+
+.org-projects .ui.selection.dropdown.org-project-dropdown.loading,
+.org-projects .org-project-date-input.is-loading {
+  cursor: progress;
+  color: var(--project-color-ink-muted);
+}
+
+.org-projects .ui.form .field.error > .ui.selection.dropdown.org-project-dropdown,
+.org-projects .ui.form .field.error > .org-project-date-input,
+.org-projects :is(.ui.selection.dropdown.org-project-dropdown, .org-project-date-input)[aria-invalid="true"] {
+  border-color: var(--color-error-border);
+  background: var(--color-error-bg);
+}
+
+.org-projects .ui.form .field.success > .ui.selection.dropdown.org-project-dropdown,
+.org-projects .ui.form .field.success > .org-project-date-input,
+.org-projects :is(.ui.selection.dropdown.org-project-dropdown, .org-project-date-input).is-success {
+  border-color: var(--color-success-border);
+}
+
+.org-projects .org-project-date-input {
+  height: var(--project-control-height);
+  padding-inline: var(--project-space-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.org-projects .org-project-date-input::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.72;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .org-projects .ui.selection.dropdown.org-project-dropdown:not(.disabled, [aria-disabled="true"]):hover,
+  .org-projects .org-project-date-input:not(:disabled):hover {
+    border-color: color-mix(in srgb, var(--project-color-accent) 45%, var(--color-input-border));
+    background: color-mix(in srgb, var(--project-color-surface-muted) 42%, var(--color-input-background));
+  }
+}
+
+.org-projects .ui.selection.dropdown.org-project-dropdown.is-hover,
+.org-projects .org-project-date-input.is-hover {
+  border-color: color-mix(in srgb, var(--project-color-accent) 45%, var(--color-input-border));
+  background: color-mix(in srgb, var(--project-color-surface-muted) 42%, var(--color-input-background));
 }
 
 .org-project-form-actions {
@@ -1390,6 +1524,7 @@ body:has(.project-workbench) {
   }
 
   .org-project-toolbar.ui.form select,
+  .org-project-toolbar .org-project-filter-dropdown,
   .org-project-toolbar.ui.form > input {
     flex: 1 1 9rem;
     min-width: 0;

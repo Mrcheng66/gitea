@@ -22,7 +22,9 @@
   --project-text-sm: 0.875rem;
   --project-text-lg: 1.5rem;
   --project-radius-control: var(--border-radius-medium);
+  --project-radius-input: 0.5rem;
   --project-radius-panel: 0.5rem;
+  --project-control-height: 2.71428571rem;
   --project-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --project-duration-short: 160ms;
 }

@@ -89,4 +89,28 @@ describe('ProjectForm', () => {
     expect(plainElement.querySelector('[data-project-field-group]')).toBeNull();
     expect(plainElement.querySelector('.org-project-form-fields')).not.toBeNull();
   });
+
+  test('maps project field types to unified dropdown and date controls', async () => {
+    const controlSchema: OrgProjectSchema = {
+      ...schema,
+      fields: [
+        {key: 'stage', label: 'Stage', type: 'single_select', order: 0, options: [{key: 'planned', label: 'Planned', order: 0}]},
+        {key: 'labels', label: 'Labels', type: 'multi_select', order: 1, options: [{key: 'backend', label: 'Backend', order: 0}]},
+        {key: 'owner', label: 'Owner', type: 'member', order: 2},
+        {key: 'followers', label: 'Followers', type: 'member_array', order: 3},
+        {key: 'start_date', label: 'Start date', type: 'date', order: 4},
+        {key: 'review_at', label: 'Review at', type: 'date_time', order: 5},
+      ],
+    };
+    const el = document.createElement('div');
+    createApp(ProjectForm, {schema: controlSchema, initialValues: {}, members: [{id: 1, name: 'admin1', full_name: 'Admin One'}]}).mount(el);
+    await nextTick();
+
+    expect(Array.from(el.querySelector('#org-project-field-stage')!.classList)).toEqual(expect.arrayContaining(['ui', 'fluid', 'selection', 'dropdown', 'org-project-dropdown']));
+    expect(Array.from(el.querySelector('#org-project-field-labels')!.classList)).toEqual(expect.arrayContaining(['ui', 'fluid', 'search', 'multiple', 'selection', 'dropdown', 'org-project-dropdown']));
+    expect(Array.from(el.querySelector('#org-project-field-owner')!.classList)).toEqual(expect.arrayContaining(['ui', 'fluid', 'search', 'selection', 'dropdown', 'org-project-dropdown']));
+    expect(Array.from(el.querySelector('#org-project-field-followers')!.classList)).toEqual(expect.arrayContaining(['ui', 'fluid', 'search', 'multiple', 'selection', 'dropdown', 'org-project-dropdown']));
+    expect(el.querySelector('#org-project-field-start_date')!.classList.contains('org-project-date-input')).toBe(true);
+    expect(el.querySelector('#org-project-field-review_at')!.classList.contains('org-project-date-input')).toBe(true);
+  });
 });

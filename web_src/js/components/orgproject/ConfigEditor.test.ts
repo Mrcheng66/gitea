@@ -64,4 +64,25 @@ describe('ConfigEditor schema helpers', () => {
     expect(errors).toContain('Duplicate field key: Bad Key');
     expect(errors).toContain('Field Bad Key needs a label');
   });
+
+  test('uses unified dropdowns throughout the configuration editor', async () => {
+    const el = document.createElement('div');
+    const configuredSchema: OrgProjectSchema = {
+      ...schema([
+        {key: 'stage', label: 'Stage', type: 'single_select', order: 0},
+        {key: 'owner', label: 'Owner', type: 'member', order: 1},
+      ]),
+      list_view: {columns: ['stage'], sort: [{field_key: 'stage', direction: 'asc'}]},
+      filters: [{key: 'risk', label: 'Risk', field_key: 'stage', operator: 'eq'}],
+      metrics: [{key: 'projects', label: 'Projects', aggregation: 'count', field_key: 'stage', group_by: 'owner'}],
+    };
+    createApp(ConfigEditor, {schema: configuredSchema, labels}).mount(el);
+    await nextTick();
+
+    const dropdowns = Array.from(el.querySelectorAll('select'));
+    expect(dropdowns.length).toBeGreaterThan(1);
+    for (const dropdown of dropdowns) {
+      expect(Array.from(dropdown.classList)).toEqual(expect.arrayContaining(['ui', 'fluid', 'selection', 'dropdown', 'org-project-dropdown']));
+    }
+  });
 });

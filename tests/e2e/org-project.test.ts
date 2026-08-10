@@ -31,6 +31,23 @@ test('publish configuration and create a native organization project', async ({p
     await expect(page.getByRole('heading', {name: 'Status and action'})).toBeVisible();
     await expect(page.getByRole('heading', {name: 'Creation checklist'})).toBeVisible();
 
+    const stageSelect = page.locator('#org-project-field-stage');
+    const stageDropdown = stageSelect.locator('..');
+    await expect(stageDropdown).toHaveClass(/org-project-dropdown/);
+    await expect(stageDropdown).toHaveClass(/selection/);
+
+    const ownerSelect = page.locator('#org-project-field-owner');
+    const ownerDropdown = ownerSelect.locator('..');
+    await expect(ownerDropdown).toHaveClass(/search/);
+    await ownerDropdown.click();
+    await expect(ownerDropdown.locator('input.search')).toBeVisible();
+    await page.keyboard.press('Escape');
+
+    const startDate = page.locator('#org-project-field-start_date');
+    await expect(startDate).toHaveClass(/org-project-date-input/);
+    await startDate.fill('2026-08-10');
+    expect(await startDate.evaluate((element) => element.getBoundingClientRect().height)).toBe(38);
+
     for (const width of [320, 375, 414, 768]) {
       await page.setViewportSize({width, height: 800});
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
@@ -42,6 +59,9 @@ test('publish configuration and create a native organization project', async ({p
     await page.getByLabel('Description').fill('Created by the native organization project Playwright flow.');
     await expect(page.locator('[data-summary-control="slug"] [data-summary-value]')).toHaveText(projectSlug);
     await expect(page.locator('[data-summary-control="org-project-field-stage"] [data-summary-value]')).toHaveText('规划中');
+    await stageDropdown.click();
+    await stageDropdown.locator('.menu > .item[data-value="development"]').click();
+    await expect(page.locator('[data-summary-control="org-project-field-stage"] [data-summary-value]')).toHaveText('研发中');
     await page.getByRole('button', {name: 'Create project'}).click();
 
     await expect(page).toHaveURL(new RegExp(`/org/${orgName}/projects/${projectSlug}$`));

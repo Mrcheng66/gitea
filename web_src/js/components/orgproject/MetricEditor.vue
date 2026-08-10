@@ -34,9 +34,9 @@ function addMetric() {
         <span class="org-project-rule-index">{{ index + 1 }}</span>
         <div class="field"><label>{{ label('key') }}</label><input v-model.trim="metric.key"></div>
         <div class="field"><label>{{ label('label') }}</label><input v-model.trim="metric.label"></div>
-        <div class="field"><label>{{ label('aggregation') }}</label><select v-model="metric.aggregation"><option value="count">{{ label('count') }}</option><option value="average">{{ label('average') }}</option></select></div>
-        <div class="field"><label>{{ label('valueField') }}</label><select v-model="metric.field_key"><option value="">{{ label('projects') }}</option><option v-for="field in activeFields" :key="field.key" :value="field.key">{{ field.label }}</option></select></div>
-        <div class="field"><label>{{ label('groupBy') }}</label><select v-model="metric.group_by"><option value="">{{ label('none') }}</option><option v-for="field in activeFields" :key="field.key" :value="field.key">{{ field.label }}</option></select></div>
+        <div class="field"><label>{{ label('aggregation') }}</label><select v-model="metric.aggregation" class="ui fluid selection dropdown org-project-dropdown"><option value="count">{{ label('count') }}</option><option value="average">{{ label('average') }}</option></select></div>
+        <div class="field"><label>{{ label('valueField') }}</label><select v-model="metric.field_key" class="ui fluid selection dropdown org-project-dropdown"><option value="">{{ label('projects') }}</option><option v-for="field in activeFields" :key="field.key" :value="field.key">{{ field.label }}</option></select></div>
+        <div class="field"><label>{{ label('groupBy') }}</label><select v-model="metric.group_by" class="ui fluid selection dropdown org-project-dropdown"><option value="">{{ label('none') }}</option><option v-for="field in activeFields" :key="field.key" :value="field.key">{{ field.label }}</option></select></div>
         <button type="button" class="ui tiny basic red button org-project-rule-remove" :aria-label="label('removeMetric')" @click="metrics.splice(index, 1)">{{ label('remove') }}</button>
       </div>
     </div>
