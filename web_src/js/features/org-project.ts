@@ -175,7 +175,7 @@ export async function initOrgProject() {
     })),
     mount('[data-org-project-workbench]', () => import('../components/orgproject/ProjectWorkbench.vue'), (el) => ({
       workbench: parseJSON(el, 'data-workbench', {projects: [], people: [], attention: {}, configured_organizations: 0}),
-      onlyMine: el.getAttribute('data-only-mine') === 'true',
+      onlyMine: (el.getAttribute('data-only-mine') || '').trim() === 'true',
       baseLink: el.getAttribute('data-base-link') || '',
       labels: parseJSON(el, 'data-labels', {}),
     })),
