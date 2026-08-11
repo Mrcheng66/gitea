@@ -1434,16 +1434,148 @@ body:has(.project-workbench) {
   overflow-wrap: anywhere;
 }
 
+.org-project-history-list {
+  margin: var(--project-space-sm) 0;
+}
+
+.org-project-history-item {
+  display: grid;
+  grid-template-columns: 1rem minmax(0, 1fr);
+  gap: var(--project-space-xs);
+  padding: var(--project-space-sm) 0;
+}
+
+.org-project-history-marker {
+  position: relative;
+  width: 0.75rem;
+  height: 0.75rem;
+  margin-top: 0.25rem;
+  border: 2px solid var(--project-color-accent);
+  border-radius: 50%;
+  background: var(--project-color-surface);
+}
+
+.org-project-history-item:not(:last-child) .org-project-history-marker::after {
+  position: absolute;
+  top: 0.625rem;
+  left: 50%;
+  width: 1px;
+  height: calc(100% + var(--project-space-md));
+  content: "";
+  background: var(--project-color-rule);
+  transform: translateX(-50%);
+}
+
+.org-project-history-content {
+  min-width: 0;
+  padding-bottom: var(--project-space-sm);
+  border-bottom: 1px solid var(--project-color-rule);
+}
+
+.org-project-history-item:last-child .org-project-history-content {
+  border-bottom: 0;
+}
+
+.org-project-history-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--project-space-sm);
+}
+
+.org-project-history-summary,
+.org-project-history-fields,
+.org-project-history-meta,
+.org-project-history-request {
+  display: flex;
+  align-items: center;
+  gap: var(--project-space-2xs);
+}
+
+.org-project-history-summary,
+.org-project-history-fields {
+  flex-wrap: wrap;
+}
+
+.org-project-history-actor {
+  font-weight: var(--font-weight-semibold);
+}
+
+.org-project-history-fields .ui.label {
+  margin: 0;
+}
+
+.org-project-history-meta {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.org-project-history-details {
+  margin-top: var(--project-space-xs);
+}
+
+.org-project-history-details > summary {
+  color: var(--project-color-accent);
+  cursor: pointer;
+}
+
+.org-project-history-details > summary:focus-visible {
+  outline: 2px solid var(--project-color-accent);
+  outline-offset: 2px;
+}
+
+.org-project-history-changes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--project-space-xs);
+  margin-top: var(--project-space-xs);
+}
+
+.org-project-history-change {
+  padding: var(--project-space-xs);
+  border: 1px solid var(--project-color-rule);
+  border-radius: var(--project-radius-control);
+  background: var(--project-color-surface-muted);
+}
+
+.org-project-history-change h4 {
+  margin: 0 0 var(--project-space-xs);
+}
+
 .org-project-history-diff {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem;
+  gap: var(--project-space-xs);
+}
+
+.org-project-history-value-label {
+  display: block;
+  margin-bottom: var(--project-space-3xs);
+  color: var(--project-color-ink-muted);
+  font-size: var(--project-text-xs);
+  font-weight: var(--font-weight-semibold);
 }
 
 .org-project-history-diff pre {
+  min-height: 2.5rem;
   max-height: 20rem;
+  margin: 0;
+  padding: var(--project-space-xs);
   overflow: auto;
+  border: 1px solid var(--project-color-rule);
+  border-radius: var(--project-radius-control);
+  background: var(--color-code-bg);
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.org-project-history-request {
+  flex-wrap: wrap;
+  margin-top: var(--project-space-xs);
+  font-size: var(--project-text-xs);
+}
+
+.org-project-history-request code {
   overflow-wrap: anywhere;
 }
 
@@ -1475,7 +1607,8 @@ body:has(.project-workbench) {
   .org-project-settings-panel-tools,
   .org-project-field-actions,
   .org-project-settings-history-heading,
-  .org-project-settings-history-heading > div {
+  .org-project-settings-history-heading > div,
+  .org-project-history-heading {
     align-items: flex-start;
     flex-direction: column;
   }
@@ -1490,6 +1623,11 @@ body:has(.project-workbench) {
   .org-project-settings-panel-tools,
   .org-project-field-actions {
     align-items: stretch;
+  }
+
+  .org-project-history-meta {
+    flex-wrap: wrap;
+    white-space: normal;
   }
 
   .org-project-field-summary {

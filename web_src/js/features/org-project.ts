@@ -149,7 +149,20 @@ export async function initOrgProject() {
     })),
     mount('[data-org-project-history]', () => import('../components/orgproject/ProjectHistory.vue'), (el) => ({
       changes: parseJSON(el, 'data-changes', []),
+      fieldLabels: parseJSON(el, 'data-field-labels', {}),
       emptyText: el.getAttribute('data-empty-text') || '',
+      locale: {
+        changed: el.getAttribute('data-locale-changed') || '',
+        user: el.getAttribute('data-locale-user') || '',
+        source: el.getAttribute('data-locale-source') || '',
+        sourceWeb: el.getAttribute('data-locale-source-web') || '',
+        sourceApi: el.getAttribute('data-locale-source-api') || '',
+        sourceLegacyImport: el.getAttribute('data-locale-source-legacy-import') || '',
+        details: el.getAttribute('data-locale-details') || '',
+        before: el.getAttribute('data-locale-before') || '',
+        after: el.getAttribute('data-locale-after') || '',
+        requestID: el.getAttribute('data-locale-request-id') || '',
+      },
     })),
     mount('[data-org-project-config-editor]', () => import('../components/orgproject/ConfigEditor.vue'), (el) => ({
       schema: parseJSON(el, 'data-schema', {schema_version: 1, fields: [], list_view: {columns: []}, filters: [], metrics: []}),

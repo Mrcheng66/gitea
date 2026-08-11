@@ -9,6 +9,7 @@ import (
 	"time"
 
 	orgproject_model "gitea.dev/models/orgproject"
+	user_model "gitea.dev/models/user"
 	"gitea.dev/modules/json"
 	"gitea.dev/modules/setting"
 	"gitea.dev/modules/timeutil"
@@ -33,6 +34,36 @@ type projectFilterDisplay struct {
 	Value   string
 	Field   config.Field
 	Members []memberDisplay
+}
+
+type projectHistoryEntry struct {
+	ID            int64      `json:"id"`
+	ActorID       int64      `json:"actor_id"`
+	ActorName     string     `json:"actor_name,omitempty"`
+	ActorLink     string     `json:"actor_link,omitempty"`
+	RequestID     string     `json:"request_id"`
+	ChangedFields json.Value `json:"changed_fields"`
+	Before        json.Value `json:"before"`
+	After         json.Value `json:"after"`
+	Source        string     `json:"source"`
+	CreatedAt     time.Time  `json:"created_at"`
+}
+
+func buildProjectHistoryEntries(changes []*orgproject_model.ChangeLog, actors map[int64]*user_model.User) []projectHistoryEntry {
+	entries := make([]projectHistoryEntry, 0, len(changes))
+	for _, change := range changes {
+		entry := projectHistoryEntry{
+			ID: change.ID, ActorID: change.ActorID, RequestID: change.RequestID,
+			ChangedFields: json.Value(change.ChangedFields), Before: json.Value(change.BeforeValue), After: json.Value(change.AfterValue),
+			Source: string(change.Source), CreatedAt: change.CreatedUnix.AsTime(),
+		}
+		if actor := actors[change.ActorID]; actor != nil {
+			entry.ActorName = actor.DisplayName()
+			entry.ActorLink = actor.HomeLink()
+		}
+		entries = append(entries, entry)
+	}
+	return entries
 }
 
 // Dashboard renders configured metrics and recent organization projects.
@@ -398,9 +429,34 @@ func History(ctx *context.Context) {
 		writeProjectError(ctx, err, tplOrgProjectHistory)
 		return
 	}
+	actorIDs := make([]int64, 0, len(changes))
+	seenActorIDs := make(map[int64]struct{}, len(changes))
+	for _, change := range changes {
+		if _, seen := seenActorIDs[change.ActorID]; seen {
+			continue
+		}
+		seenActorIDs[change.ActorID] = struct{}{}
+		actorIDs = append(actorIDs, change.ActorID)
+	}
+	actors, err := user_model.GetUsersMapByIDs(ctx, actorIDs)
+	if err != nil {
+		ctx.ServerError("GetUsersMapByIDs", err)
+		return
+	}
+	fieldLabels := map[string]string{
+		"slug": ctx.Locale.TrString("org_project.slug"), "name": ctx.Locale.TrString("org_project.name"),
+		"description": ctx.Locale.TrString("org_project.description"), "lifecycle": ctx.Locale.TrString("org_project.status"),
+		"repositories": ctx.Locale.TrString("org_project.repositories"),
+	}
+	if schema, err := config.GetPublishedSchema(ctx, ctx.Org.Organization.ID); err == nil {
+		for _, field := range schema.Fields {
+			fieldLabels["values."+field.Key] = field.Label
+		}
+	}
 	ctx.Data["Title"] = ctx.Tr("org_project.history.title", detail.Project.Name)
 	ctx.Data["OrgProject"] = detail.Project
-	ctx.Data["OrgProjectChanges"] = changes
+	ctx.Data["OrgProjectChanges"] = buildProjectHistoryEntries(changes, actors)
+	ctx.Data["OrgProjectHistoryFieldLabels"] = fieldLabels
 	ctx.HTML(http.StatusOK, tplOrgProjectHistory)
 }
 

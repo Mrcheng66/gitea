@@ -4,7 +4,22 @@
 	<div class="ui container">
 		{{template "base/alert" .}}
 		{{template "orgproject/shared/detail_header" .}}
-		<div data-org-project-history data-changes="{{JsonUtils.EncodeToString .OrgProjectChanges}}" data-empty-text="{{ctx.Locale.Tr "org_project.history.empty"}}"></div>
+		<div
+			data-org-project-history
+			data-changes="{{JsonUtils.EncodeToString .OrgProjectChanges}}"
+			data-field-labels="{{JsonUtils.EncodeToString .OrgProjectHistoryFieldLabels}}"
+			data-empty-text="{{ctx.Locale.Tr "org_project.history.empty"}}"
+			data-locale-changed="{{ctx.Locale.Tr "org_project.history.changed_action"}}"
+			data-locale-user="{{ctx.Locale.Tr "org_project.history.user"}}"
+			data-locale-source="{{ctx.Locale.Tr "org_project.history.source"}}"
+			data-locale-source-web="{{ctx.Locale.Tr "org_project.history.source.web"}}"
+			data-locale-source-api="{{ctx.Locale.Tr "org_project.history.source.api"}}"
+			data-locale-source-legacy-import="{{ctx.Locale.Tr "org_project.history.source.legacy_import"}}"
+			data-locale-details="{{ctx.Locale.Tr "org_project.history.details"}}"
+			data-locale-before="{{ctx.Locale.Tr "org_project.history.before"}}"
+			data-locale-after="{{ctx.Locale.Tr "org_project.history.after"}}"
+			data-locale-request-id="{{ctx.Locale.Tr "org_project.history.request_id"}}"
+		></div>
 	</div>
 </div>
 {{template "base/footer" .}}
