@@ -6,13 +6,13 @@ vi.mock('../modules/fetch.ts', () => ({
 }));
 
 describe('organization project workbench', {concurrent: false}, () => {
-  test('trims the only-mine data attribute before selecting the scope', async () => {
+  test('uses the current path and selects only mine from padded attributes', async () => {
     document.body.innerHTML = `
       <div
         data-org-project-workbench
         data-workbench='{"projects":[],"people":[],"attention":{},"configured_organizations":0}'
         data-only-mine=" true "
-        data-base-link="/"
+        data-base-link=""
         data-labels='{"title":"Workbench","subtitle":"Projects","team":"Team","mine":"Mine","attention":"Attention","empty":"Empty","configure":"Configure"}'
       ></div>
     `;
@@ -21,6 +21,23 @@ describe('organization project workbench', {concurrent: false}, () => {
 
     expect(document.querySelector<HTMLAnchorElement>('a[href="/"]')!.classList).not.toContain('active');
     expect(document.querySelector<HTMLAnchorElement>('a[href="/?scope=mine"]')!.classList).toContain('active');
+  });
+
+  test('selects the team scope after the mine query is cleared', async () => {
+    document.body.innerHTML = `
+      <div
+        data-org-project-workbench
+        data-workbench='{"projects":[],"people":[],"attention":{},"configured_organizations":0}'
+        data-only-mine=" false "
+        data-base-link=""
+        data-labels='{"title":"Workbench","subtitle":"Projects","team":"Team","mine":"Mine","attention":"Attention","empty":"Empty","configure":"Configure"}'
+      ></div>
+    `;
+
+    await initOrgProject();
+
+    expect(document.querySelector<HTMLAnchorElement>('a[href="/"]')!.classList).toContain('active');
+    expect(document.querySelector<HTMLAnchorElement>('a[href="/?scope=mine"]')!.classList).not.toContain('active');
   });
 });
 
