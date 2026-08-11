@@ -695,6 +695,11 @@ body:has(.project-workbench) {
   margin-top: var(--project-space-sm);
 }
 
+.org-project-repository-search {
+  width: 260px;
+  max-width: 100%;
+}
+
 .org-project-repository-linker summary,
 .org-project-danger-zone summary {
   width: fit-content;

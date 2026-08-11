@@ -73,6 +73,8 @@ test('publish configuration and create a native organization project', async ({p
 
     const repositoryLinker = page.locator('.org-project-repository-linker');
     await repositoryLinker.locator('summary').click();
+    const repositorySearchBox = repositoryLinker.locator('.org-project-repository-search');
+    expect(await repositorySearchBox.evaluate((element) => element.getBoundingClientRect().width)).toBe(260);
     const repositorySearch = repositoryLinker.getByLabel('Repository');
     const searchResponse = page.waitForResponse((response) => new URL(response.url()).pathname.endsWith('/repo/search'));
     await repositorySearch.pressSequentially(repoName);
